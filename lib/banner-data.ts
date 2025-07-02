@@ -1,0 +1,55 @@
+export const mockBanners = [
+  {
+    id: "banner-header-1",
+    title: "Nova Coleção",
+    description: "Descubra as últimas tendências da moda feminina com peças exclusivas e cheias de estilo.",
+    image: "/placeholder.svg?height=600&width=400",
+    link: "/categoria/vestidos",
+    buttonText: "Ver Coleção",
+    position: "homepage-header",
+    isActive: true,
+  },
+  {
+    id: "banner-middle-1",
+    title: "Promoção de Blusas",
+    image: "/placeholder.svg?height=400&width=600",
+    link: "/categoria/blusas",
+    position: "homepage-middle-1",
+    isActive: true,
+  },
+  {
+    id: "banner-middle-2",
+    title: "Outlet com 50% OFF",
+    image: "/placeholder.svg?height=400&width=600",
+    link: "/outlet",
+    position: "homepage-middle-2",
+    isActive: true,
+  },
+  {
+    id: "banner-footer-1",
+    title: "Fique por dentro das novidades",
+    description: "Receba em primeira mão nossas promoções exclusivas e lançamentos",
+    image: "/placeholder.svg?height=200&width=1200",
+    link: "#",
+    buttonText: "Cadastrar",
+    position: "homepage-footer",
+    isActive: true,
+  },
+  {
+    id: "banner-category-vestidos",
+    title: "Coleção de Vestidos",
+    image: "/placeholder.svg?height=400&width=600",
+    link: "/categoria/vestidos",
+    position: "category-header",
+    categorySlug: "vestidos",
+    isActive: true,
+  },
+]
+
+export const bannerPositions = [
+  { value: "homepage-header", label: "Homepage - Header" },
+  { value: "homepage-middle-1", label: "Homepage - Meio 1" },
+  { value: "homepage-middle-2", label: "Homepage - Meio 2" },
+  { value: "homepage-footer", label: "Homepage - Rodapé" },
+  { value: "category-header", label: "Página de Categoria - Header" },
+]
