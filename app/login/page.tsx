@@ -9,12 +9,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Store, Lock, User, Eye, EyeOff } from "lucide-react"
+import { Store, Lock, User, Eye, EyeOff, Shield } from "lucide-react"
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 
 export default function LoginPage() {
   const router = useRouter()
+  const [loginType, setLoginType] = useState<"lojista" | "admin">("lojista")
   const [formData, setFormData] = useState({
     storeCode: "",
+    email: "",
     password: "",
   })
   const [showPassword, setShowPassword] = useState(false)
@@ -26,17 +30,30 @@ export default function LoginPage() {
     setIsLoading(true)
     setError("")
 
-    // Simulação de login - em produção seria uma API call
     try {
-      if (formData.storeCode === "BELLA001" && formData.password === "123456") {
-        // Salvar dados da sessão
-        localStorage.setItem("storeCode", formData.storeCode)
-        localStorage.setItem("isLoggedIn", "true")
+      let payload: any = { password: formData.password }
+      if (loginType === "lojista") {
+        payload.codigo = formData.storeCode
+      } else {
+        payload.email = formData.email
+      }
 
-        // Redirecionar para o dashboard
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      const data = await response.json()
+      if (data.success) {
+        localStorage.setItem("token", data.data.token)
+        localStorage.setItem("user", JSON.stringify(data.data.user))
+        if (loginType === "lojista") {
+          localStorage.setItem("storeCode", formData.storeCode)
+        }
+        localStorage.setItem("isLoggedIn", "true")
         router.push("/dashboard")
       } else {
-        setError("Código da loja ou senha incorretos")
+        setError(data.message || "Credenciais incorretas")
       }
     } catch (err) {
       setError("Erro ao fazer login. Tente novamente.")
@@ -59,29 +76,71 @@ export default function LoginPage() {
           <p className="text-muted-foreground mt-2">Acesse o painel da sua loja</p>
         </div>
 
+        {/* Toggle de tipo de login */}
+        <div className="flex justify-center gap-2 mb-2">
+          <Button
+            type="button"
+            variant={loginType === "lojista" ? "default" : "outline"}
+            onClick={() => setLoginType("lojista")}
+            className="flex-1"
+          >
+            <User className="mr-2 h-4 w-4" /> Lojista
+          </Button>
+          <Button
+            type="button"
+            variant={loginType === "admin" ? "default" : "outline"}
+            onClick={() => setLoginType("admin")}
+            className="flex-1"
+          >
+            <Shield className="mr-2 h-4 w-4" /> Admin Master
+          </Button>
+        </div>
+
         {/* Login Form */}
         <Card>
           <CardHeader>
             <CardTitle>Fazer Login</CardTitle>
-            <CardDescription>Digite o código da sua loja e senha para acessar o dashboard</CardDescription>
+            <CardDescription>
+              {loginType === "lojista"
+                ? "Digite o código da sua loja e senha para acessar o dashboard"
+                : "Digite o e-mail de admin master e senha para acessar o painel geral"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="storeCode">Código da Loja</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    id="storeCode"
-                    type="text"
-                    placeholder="Ex: BELLA001"
-                    value={formData.storeCode}
-                    onChange={(e) => setFormData({ ...formData, storeCode: e.target.value.toUpperCase() })}
-                    className="pl-10"
-                    required
-                  />
+              {loginType === "lojista" ? (
+                <div className="space-y-2">
+                  <Label htmlFor="storeCode">Código da Loja</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      id="storeCode"
+                      type="text"
+                      placeholder="Ex: BELLA001"
+                      value={formData.storeCode}
+                      onChange={(e) => setFormData({ ...formData, storeCode: e.target.value })}
+                      className="pl-10"
+                      required={loginType === "lojista"}
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail do Admin</Label>
+                  <div className="relative">
+                    <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="admin@bella.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="pl-10"
+                      required={loginType === "admin"}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
@@ -122,10 +181,13 @@ export default function LoginPage() {
                 <p className="mb-2">Dados para teste:</p>
                 <div className="bg-gray-50 p-3 rounded-md text-left">
                   <p>
-                    <strong>Código:</strong> BELLA001
+                    <strong>Código:</strong> loja001
                   </p>
                   <p>
-                    <strong>Senha:</strong> 123456
+                    <strong>E-mail:</strong> admin@bella.com
+                  </p>
+                  <p>
+                    <strong>Senha:</strong> 123
                   </p>
                 </div>
               </div>

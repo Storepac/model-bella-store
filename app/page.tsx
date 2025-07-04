@@ -231,7 +231,7 @@ export default function Home() {
               <h4 className="font-semibold mb-4">Atendimento</h4>
               <div className="space-y-2 text-sm text-gray-400">
                 <p>Segunda a Sexta: 9h às 18h</p>
-                <p>Sábado: 9h às 14h</p>
+                <p>Sábado: 9h às 15h</p>
                 <p>WhatsApp: (11) 99999-9999</p>
               </div>
             </div>

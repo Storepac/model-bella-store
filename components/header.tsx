@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { useCart } from "@/lib/cart-context"
 import Link from "next/link"
 import { storeData } from "@/lib/store-data"
-import { categories } from "@/lib/category-data"
+import { CategoryMenu, CategoryMenuMobile } from "@/components/category-menu"
+import { MegaMenu } from "@/components/mega-menu"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -54,15 +55,9 @@ export function Header() {
             <Link href="/" className="text-sm font-medium hover:text-pink-500 transition-colors">
               Home
             </Link>
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={`/categoria/${category.slug}`}
-                className="text-sm font-medium hover:text-pink-500 transition-colors"
-              >
-                {category.name}
-              </Link>
-            ))}
+            <MegaMenu categorySlug="feminino" label="Feminino" />
+            <MegaMenu categorySlug="masculino" label="Masculino" />
+            <MegaMenu categorySlug="infantil" label="Infantil" />
           </nav>
 
           {/* Actions */}
@@ -101,24 +96,15 @@ export function Header() {
       {/* Mobile Navigation */}
       {isMenuOpen && (
         <div className="md:hidden border-t bg-white">
-          <nav className="container mx-auto px-4 py-4 space-y-4">
+          <nav className="container mx-auto px-4 py-4">
             <Link
               href="/"
-              className="block text-sm font-medium hover:text-pink-500 transition-colors"
+              className="block text-sm font-medium hover:text-pink-500 transition-colors mb-4"
               onClick={() => setIsMenuOpen(false)}
             >
               Home
             </Link>
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={`/categoria/${category.slug}`}
-                className="block text-sm font-medium hover:text-pink-500 transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {category.name}
-              </Link>
-            ))}
+            <CategoryMenuMobile />
           </nav>
         </div>
       )}
