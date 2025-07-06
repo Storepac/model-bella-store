@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,10 +19,11 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Plus, Upload, MoreHorizontal, Edit, Trash2, ImageIcon } from "lucide-react"
 import Image from "next/image"
-import { mockBanners, bannerPositions } from "@/lib/banner-data"
+import { bannerPositions } from "@/lib/banner-data"
 
 export default function BannersPage() {
-  const [banners, setBanners] = useState(mockBanners)
+  const [banners, setBanners] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState<any>(null)
   const [formData, setFormData] = useState({
@@ -33,6 +34,22 @@ export default function BannersPage() {
     buttonText: "",
     position: "homepage-middle-1",
   })
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/banners')
+        const data = await res.json()
+        setBanners(data.banners || [])
+      } catch (err) {
+        setBanners([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchBanners()
+  }, [])
 
   const handleSave = () => {
     if (editingBanner) {

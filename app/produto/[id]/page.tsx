@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ShoppingBag, Star, Truck, Shield, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,30 +9,6 @@ import { Layout } from "@/components/layout"
 import { CartToast } from "@/components/cart-toast"
 import { useCart } from "@/lib/cart-context"
 import Image from "next/image"
-
-// Mock data - em produção viria da API
-const mockProduct = {
-  id: "1",
-  name: "Vestido Midi Floral Primavera Elegante",
-  price: 159.9,
-  originalPrice: 199.9,
-  description:
-    "Vestido midi com estampa floral delicada, perfeito para ocasiões especiais. Confeccionado em tecido fluido e confortável, com modelagem que valoriza a silhueta feminina. Ideal para primavera e verão.",
-  images: [
-    "/placeholder.svg?height=600&width=400",
-    "/placeholder.svg?height=600&width=400",
-    "/placeholder.svg?height=600&width=400",
-    "/placeholder.svg?height=600&width=400",
-  ],
-  category: "Vestidos",
-  sizes: ["PP", "P", "M", "G", "GG"],
-  colors: ["Rosa", "Azul", "Verde", "Branco"],
-  stock: 15,
-  rating: 4.8,
-  reviews: 127,
-  isNew: true,
-  features: ["Tecido: 100% Viscose", "Modelagem: Midi", "Manga: Curta", "Decote: Redondo", "Forro: Sim"],
-}
 
 export default function ProductPage() {
   const params = useParams()
@@ -45,11 +21,79 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1)
   const [isLiked, setIsLiked] = useState(false)
   const [showToast, setShowToast] = useState(false)
+  const [product, setProduct] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const product = mockProduct // Em produção, buscar por params.id
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch(`/api/products/${params.id}`, {
+          cache: 'no-store'
+        })
+        const data = await response.json()
+        
+        if (data.success) {
+          setProduct(data.product)
+        } else {
+          setError(data.error || 'Produto não encontrado')
+        }
+      } catch (err) {
+        setError('Erro ao carregar produto')
+        console.error('Erro ao carregar produto:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const discountPercentage = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    if (params.id) {
+      fetchProduct()
+    }
+  }, [params.id])
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-white">
+          <div className="container mx-auto px-4 py-8">
+            <div className="grid lg:grid-cols-2 gap-8">
+              {/* Loading skeleton */}
+              <div className="space-y-4">
+                <div className="aspect-[3/4] bg-gray-200 rounded-lg animate-pulse"></div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="aspect-square bg-gray-200 rounded-md animate-pulse"></div>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-6">
+                <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                <div className="h-12 bg-gray-200 rounded animate-pulse w-1/2"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (error || !product) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button onClick={() => router.push('/')}>Voltar para a loja</Button>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  const discountPercentage = product.original_price
+    ? Math.round(((parseFloat(product.original_price.replace('R$ ', '')) - parseFloat(product.price.replace('R$ ', ''))) / parseFloat(product.original_price.replace('R$ ', ''))) * 100)
     : 0
 
   const handleAddToCart = () => {
@@ -139,7 +183,7 @@ Gostaria de comprar este produto!`
 
               {/* Thumbnail Images */}
               <div className="grid grid-cols-4 gap-2">
-                {product.images.map((image, index) => (
+                {product.images.map((image: string, index: number) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
@@ -156,6 +200,32 @@ Gostaria de comprar este produto!`
                   </button>
                 ))}
               </div>
+
+              {/* Video Section */}
+              {product.video && (
+                <div className="space-y-2">
+                  <h3 className="font-medium">Vídeo do Produto</h3>
+                  <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                    {product.video.includes('youtube.com') || product.video.includes('youtu.be') ? (
+                      <iframe
+                        src={product.video.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                        className="w-full h-full"
+                        allowFullScreen
+                        title={`Vídeo - ${product.name}`}
+                      />
+                    ) : (
+                      <video
+                        controls
+                        className="w-full h-full object-cover"
+                        poster={product.images[0]}
+                      >
+                        <source src={product.video} type="video/mp4" />
+                        Seu navegador não suporta reprodução de vídeo.
+                      </video>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Product Info */}
@@ -187,9 +257,9 @@ Gostaria de comprar este produto!`
                   <span className="text-3xl font-bold text-gray-900">
                     R$ {product.price.toFixed(2).replace(".", ",")}
                   </span>
-                  {product.originalPrice && (
+                  {product.original_price && (
                     <span className="text-lg text-muted-foreground line-through">
-                      R$ {product.originalPrice.toFixed(2).replace(".", ",")}
+                      R$ {product.original_price.toFixed(2).replace(".", ",")}
                     </span>
                   )}
                 </div>
@@ -205,7 +275,7 @@ Gostaria de comprar este produto!`
                     Cor: {selectedColor && <span className="text-pink-500">{selectedColor}</span>}
                   </h3>
                   <div className="flex gap-2">
-                    {product.colors.map((color) => (
+                    {product.colors.map((color: string) => (
                       <button
                         key={color}
                         onClick={() => setSelectedColor(color)}
@@ -229,7 +299,7 @@ Gostaria de comprar este produto!`
                     Tamanho: {selectedSize && <span className="text-pink-500">{selectedSize}</span>}
                   </h3>
                   <div className="grid grid-cols-5 gap-2">
-                    {product.sizes.map((size) => (
+                    {product.sizes.map((size: string) => (
                       <button
                         key={size}
                         onClick={() => setSelectedSize(size)}
@@ -303,7 +373,7 @@ Gostaria de comprar este produto!`
 
                 <h4 className="font-medium mb-2">Características:</h4>
                 <ul className="space-y-1 text-sm text-muted-foreground">
-                  {product.features.map((feature, index) => (
+                  {product.features.map((feature: string, index: number) => (
                     <li key={index}>• {feature}</li>
                   ))}
                 </ul>

@@ -51,7 +51,11 @@ export default function LoginPage() {
           localStorage.setItem("storeCode", formData.storeCode)
         }
         localStorage.setItem("isLoggedIn", "true")
-        router.push("/dashboard")
+        if (data.data.user.email === "admin@bella.com") {
+          router.push("/admin")
+        } else {
+          router.push("/dashboard")
+        }
       } else {
         setError(data.message || "Credenciais incorretas")
       }

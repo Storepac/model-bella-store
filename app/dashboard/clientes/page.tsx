@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,102 +10,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Search, Filter, MoreHorizontal, Eye, MessageSquare, Users, ShoppingBag, Calendar, Star } from "lucide-react"
 
-// Mock data para clientes
-const mockClientes = [
-  {
-    id: "1",
-    name: "Maria Silva",
-    email: "maria@email.com",
-    phone: "(11) 99999-1111",
-    totalOrders: 5,
-    totalSpent: 789.5,
-    lastOrder: "2024-01-15",
-    firstOrder: "2023-08-10",
-    averageTicket: 157.9,
-    status: "active",
-    address: {
-      street: "Rua das Flores, 123",
-      neighborhood: "Centro",
-      city: "São Paulo",
-      state: "SP",
-      zipCode: "01234-567",
-    },
-    orders: [
-      { id: "#001", date: "2024-01-15", total: 159.9, status: "delivered" },
-      { id: "#015", date: "2024-01-02", total: 289.8, status: "delivered" },
-      { id: "#008", date: "2023-12-20", total: 129.9, status: "delivered" },
-    ],
-  },
-  {
-    id: "2",
-    name: "Ana Costa",
-    email: "ana@email.com",
-    phone: "(11) 99999-2222",
-    totalOrders: 3,
-    totalSpent: 459.7,
-    lastOrder: "2024-01-14",
-    firstOrder: "2023-11-05",
-    averageTicket: 153.23,
-    status: "active",
-    address: {
-      street: "Av. Paulista, 456",
-      neighborhood: "Bela Vista",
-      city: "São Paulo",
-      state: "SP",
-      zipCode: "01310-100",
-    },
-    orders: [
-      { id: "#002", date: "2024-01-14", total: 309.7, status: "confirmed" },
-      { id: "#012", date: "2023-12-28", total: 89.9, status: "delivered" },
-      { id: "#005", date: "2023-11-15", total: 60.1, status: "delivered" },
-    ],
-  },
-  {
-    id: "3",
-    name: "Julia Santos",
-    email: "julia@email.com",
-    phone: "(11) 99999-3333",
-    totalOrders: 8,
-    totalSpent: 1245.6,
-    lastOrder: "2024-01-13",
-    firstOrder: "2023-06-20",
-    averageTicket: 155.7,
-    status: "vip",
-    address: {
-      street: "Rua Augusta, 789",
-      neighborhood: "Consolação",
-      city: "São Paulo",
-      state: "SP",
-      zipCode: "01305-000",
-    },
-    orders: [
-      { id: "#003", date: "2024-01-13", total: 199.9, status: "shipped" },
-      { id: "#018", date: "2024-01-05", total: 345.8, status: "delivered" },
-      { id: "#014", date: "2023-12-22", total: 189.9, status: "delivered" },
-    ],
-  },
-  {
-    id: "4",
-    name: "Carla Oliveira",
-    email: "carla@email.com",
-    phone: "(11) 99999-4444",
-    totalOrders: 1,
-    totalSpent: 129.9,
-    lastOrder: "2024-01-10",
-    firstOrder: "2024-01-10",
-    averageTicket: 129.9,
-    status: "new",
-    address: {
-      street: "Rua Oscar Freire, 321",
-      neighborhood: "Jardins",
-      city: "São Paulo",
-      state: "SP",
-      zipCode: "01426-001",
-    },
-    orders: [{ id: "#004", date: "2024-01-10", total: 129.9, status: "delivered" }],
-  },
-]
-
 const statusConfig = {
   new: { label: "Novo", color: "bg-blue-100 text-blue-800" },
   active: { label: "Ativo", color: "bg-green-100 text-green-800" },
@@ -114,11 +18,28 @@ const statusConfig = {
 }
 
 export default function ClientesPage() {
-  const [clientes, setClientes] = useState(mockClientes)
+  const [clientes, setClientes] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedCliente, setSelectedCliente] = useState<any>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+
+  useEffect(() => {
+    const fetchClientes = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/clients')
+        const data = await res.json()
+        setClientes(data.clients || [])
+      } catch (err) {
+        setClientes([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchClientes()
+  }, [])
 
   const filteredClientes = clientes.filter((cliente) => {
     const matchesSearch =

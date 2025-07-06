@@ -73,7 +73,7 @@ export default function CategoriasPage() {
       id: editingCategory ? editingCategory.id : undefined,
       ...formData,
       slug: formData.name.toLowerCase().replace(/\s+/g, "-"),
-      image: formData.image || "/placeholder.svg?height=80&width=80",
+      image: formData.image && formData.image !== '' ? formData.image : "/placeholder.svg?height=80&width=80",
       productCount: editingCategory ? editingCategory.productCount : 0,
       isActive: editingCategory ? editingCategory.isActive : true,
       order: editingCategory ? editingCategory.order : categorias.length + 1,
@@ -152,8 +152,17 @@ export default function CategoriasPage() {
     }
   }
 
-  const toggleActive = (id: string) => {
-    setCategorias(categorias.map((cat) => (cat.id === id ? { ...cat, isActive: !cat.isActive } : cat)))
+  const toggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      await fetch('/api/categories', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, isActive: !currentStatus })
+      })
+      reloadCategorias()
+    } catch (error) {
+      console.error('Erro ao atualizar status da categoria:', error)
+    }
   }
 
   const handleAddSubcategory = (parentId: string, parentLevel: number) => {
@@ -218,7 +227,7 @@ export default function CategoriasPage() {
         <TableCell>
           <Switch
             checked={categoria.isActive}
-            onCheckedChange={() => toggleActive(categoria.id)}
+            onCheckedChange={() => toggleActive(categoria.id, categoria.isActive)}
           />
         </TableCell>
         <TableCell>{categoria.order}</TableCell>
@@ -342,8 +351,8 @@ export default function CategoriasPage() {
                 <Label>Imagem da Categoria</Label>
                     <ImageUpload
                       value={formData.image}
-                      onChange={(value) => setFormData({ ...formData, image: value })}
-                      placeholder="Clique para fazer upload da imagem da categoria"
+                      onChange={(url) => setFormData((prev: any) => ({ ...prev, image: url }))}
+                      placeholder="Clique para fazer upload"
                     />
                   </div>
                 )}

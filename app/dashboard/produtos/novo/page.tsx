@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,26 +14,24 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Upload, X, Save, ArrowLeft, Video, ImageIcon } from "lucide-react"
 import Image from "next/image"
-
-const categorias = [
-  { id: "vestidos", name: "Vestidos" },
-  { id: "blusas", name: "Blusas" },
-  { id: "calcas", name: "Calças" },
-  { id: "sapatos", name: "Sapatos" },
-  { id: "acessorios", name: "Acessórios" },
-]
-
-const tamanhos = ["PP", "P", "M", "G", "GG", "XG"]
-const cores = ["Branco", "Preto", "Azul", "Rosa", "Verde", "Vermelho", "Amarelo", "Roxo"]
+import { useToast } from "@/hooks/use-toast"
 
 export default function NovoProdutoPage() {
   const router = useRouter()
+  const { toast } = useToast()
+  const [photoLimit, setPhotoLimit] = useState(2)
+  const [availableSizes, setAvailableSizes] = useState<string[]>([])
+  const [availableColors, setAvailableColors] = useState<string[]>([])
+  const [newSize, setNewSize] = useState("")
+  const [newColor, setNewColor] = useState("")
   const [produto, setProduto] = useState({
     name: "",
     description: "",
     price: "",
     originalPrice: "",
     category: "",
+    subcategory: "",
+    brandId: "",
     stock: "",
     sku: "",
     isActive: true,
@@ -49,20 +47,220 @@ export default function NovoProdutoPage() {
       height: "",
     },
   })
+  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [categorias, setCategorias] = useState<any[]>([])
+  const [subcategorias, setSubcategorias] = useState<any[]>([])
+  const [marcas, setMarcas] = useState<any[]>([])
+  const [novaMarca, setNovaMarca] = useState("")
+  const [addingBrand, setAddingBrand] = useState(false)
 
-  const handleSave = () => {
-    // Aqui salvaria no backend
-    console.log("Produto salvo:", produto)
-    alert("Produto salvo com sucesso!")
-    router.push("/dashboard/produtos")
+  useEffect(() => {
+    const fetchCategorias = async () => {
+      try {
+        const res = await fetch('/api/categories')
+        const data = await res.json()
+        setCategorias(data)
+      } catch (err) {
+        setCategorias([])
+      }
+    }
+    
+    const fetchLimits = async () => {
+      try {
+        const res = await fetch('/api/store-limits')
+        const data = await res.json()
+        if (data.success) {
+          setPhotoLimit(data.data.photos_limit)
+        }
+      } catch (err) {
+        console.error('Erro ao buscar limites:', err)
+      }
+    }
+    
+    const loadVariants = () => {
+      if (typeof window !== 'undefined') {
+        const savedSizes = localStorage.getItem('store_sizes')
+        const savedColors = localStorage.getItem('store_colors')
+        
+        setAvailableSizes(savedSizes ? JSON.parse(savedSizes) : ["PP", "P", "M", "G", "GG", "XG"])
+        setAvailableColors(savedColors ? JSON.parse(savedColors) : ["Branco", "Preto", "Azul", "Rosa", "Verde", "Vermelho", "Amarelo", "Roxo"])
+      }
+    }
+    
+    const fetchMarcas = async () => {
+      try {
+        let storeId = 1;
+        if (typeof window !== 'undefined') {
+          const userStr = localStorage.getItem('user')
+          if (userStr) {
+            try {
+              const user = JSON.parse(userStr)
+              if (user.storeId) {
+                storeId = user.storeId
+              }
+            } catch {}
+          }
+        }
+        const res = await fetch(`/api/brands?storeId=${storeId}`)
+        const data = await res.json()
+        if ('success' in data && data.success && Array.isArray(data.brands)) setMarcas(data.brands)
+      } catch (err) {
+        console.error('Erro ao buscar marcas:', err)
+      }
+    }
+    
+    fetchCategorias()
+    fetchLimits()
+    loadVariants()
+    fetchMarcas()
+  }, [])
+
+  const addNewSize = () => {
+    if (newSize.trim() && !availableSizes.includes(newSize.trim())) {
+      const updatedSizes = [...availableSizes, newSize.trim()]
+      setAvailableSizes(updatedSizes)
+      localStorage.setItem('store_sizes', JSON.stringify(updatedSizes))
+      setNewSize("")
+      toast({ title: 'Tamanho adicionado com sucesso!' })
+    }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const addNewColor = () => {
+    if (newColor.trim() && !availableColors.includes(newColor.trim())) {
+      const updatedColors = [...availableColors, newColor.trim()]
+      setAvailableColors(updatedColors)
+      localStorage.setItem('store_colors', JSON.stringify(updatedColors))
+      setNewColor("")
+      toast({ title: 'Cor adicionada com sucesso!' })
+    }
+  }
+
+  const removeSize = (size: string) => {
+    const updatedSizes = availableSizes.filter(s => s !== size)
+    setAvailableSizes(updatedSizes)
+    localStorage.setItem('store_sizes', JSON.stringify(updatedSizes))
+    // Remover do produto se estiver selecionado
+    setProduto(prev => ({ ...prev, sizes: prev.sizes.filter(s => s !== size) }))
+  }
+
+  const removeColor = (color: string) => {
+    const updatedColors = availableColors.filter(c => c !== color)
+    setAvailableColors(updatedColors)
+    localStorage.setItem('store_colors', JSON.stringify(updatedColors))
+    // Remover do produto se estiver selecionado
+    setProduto(prev => ({ ...prev, colors: prev.colors.filter(c => c !== color) }))
+  }
+
+  const formatCurrency = (value: string) => {
+    const numericValue = value.replace(/\D/g, '')
+    const formattedValue = (parseInt(numericValue) / 100).toFixed(2)
+    return formattedValue
+  }
+
+  const handlePriceChange = (field: 'price' | 'originalPrice', value: string) => {
+    const formatted = formatCurrency(value)
+    setProduto({ ...produto, [field]: formatted })
+  }
+
+  const handleSave = async () => {
+    // Validação básica
+    if (!produto.name || !produto.price || !produto.category || produto.images.length === 0) {
+      toast({ title: 'Preencha todos os campos obrigatórios e envie pelo menos uma imagem.', variant: 'destructive' })
+      return
+    }
+    try {
+      setSaving(true)
+      let data = { error: '' }
+      try {
+        // Pegar storeId do usuário logado
+        let storeId = 1;
+        if (typeof window !== 'undefined') {
+          const userStr = localStorage.getItem('user')
+          if (userStr) {
+            try {
+              const user = JSON.parse(userStr)
+              if (user.storeId) {
+                storeId = user.storeId
+              }
+            } catch {}
+          }
+        }
+        const res = await fetch('/api/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: produto.name,
+            description: produto.description,
+            price: Number(produto.price),
+            original_price: produto.originalPrice ? Number(produto.originalPrice) : null,
+            categoryId: produto.subcategory ? Number(produto.subcategory) : Number(produto.category),
+            sku: produto.sku,
+            isActive: produto.isActive,
+            isNew: produto.isNew,
+            stock: produto.stock ? Number(produto.stock) : null,
+            sizes: produto.sizes,
+            colors: produto.colors,
+            images: produto.images,
+            video: produto.video,
+            weight: produto.weight,
+            dimensions: produto.dimensions,
+            brandId: produto.brandId ? Number(produto.brandId) : null,
+            storeId: storeId,
+          })
+        })
+        data = await res.json()
+        if (res.ok && data.success) {
+          toast({ title: 'Produto salvo com sucesso!' })
+          router.push('/dashboard/produtos')
+        } else {
+          throw new Error(data.error || 'Erro desconhecido')
+        }
+      } catch (err) {
+        toast({
+          title: 'Erro ao salvar produto',
+          description: (data && data.error) ? data.error : String(err),
+          variant: 'destructive',
+        })
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files) {
-      // Simular upload de imagens
-      const newImages = Array.from(files).map((file) => URL.createObjectURL(file))
-      setProduto({ ...produto, images: [...produto.images, ...newImages] })
+      if (produto.images.length + files.length > photoLimit) {
+        toast({ 
+          title: 'Limite de fotos excedido', 
+          description: `Seu plano permite até ${photoLimit} fotos por produto.`,
+          variant: 'destructive' 
+        })
+        return
+      }
+      
+      setUploading(true)
+      try {
+        const uploadedUrls: string[] = []
+        for (const file of Array.from(files)) {
+          const formData = new FormData()
+          formData.append('file', file)
+          const res = await fetch('/api/images', {
+            method: 'POST',
+            body: formData
+          })
+          if (!res.ok) throw new Error('Erro ao enviar imagem')
+          const data = await res.json()
+          uploadedUrls.push(data.url)
+        }
+        setProduto((prev) => ({ ...prev, images: [...prev.images, ...uploadedUrls] }))
+        toast({ title: 'Imagens enviadas com sucesso!' })
+      } catch (err) {
+        toast({ title: 'Erro ao enviar imagem', description: String(err), variant: 'destructive' })
+      } finally {
+        setUploading(false)
+      }
     }
   }
 
@@ -72,7 +270,9 @@ export default function NovoProdutoPage() {
   }
 
   const toggleSize = (size: string) => {
-    const newSizes = produto.sizes.includes(size) ? produto.sizes.filter((s) => s !== size) : [...produto.sizes, size]
+    const newSizes = produto.sizes.includes(size) 
+      ? produto.sizes.filter((s) => s !== size) 
+      : [...produto.sizes, size]
     setProduto({ ...produto, sizes: newSizes })
   }
 
@@ -81,6 +281,46 @@ export default function NovoProdutoPage() {
       ? produto.colors.filter((c) => c !== color)
       : [...produto.colors, color]
     setProduto({ ...produto, colors: newColors })
+  }
+
+  const handleAddMarca = async () => {
+    if (!novaMarca.trim()) return
+    setAddingBrand(true)
+    try {
+      let storeId = 1;
+      if (typeof window !== 'undefined') {
+        const userStr = localStorage.getItem('user')
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr)
+            if (user.storeId) {
+              storeId = user.storeId
+            }
+          } catch {}
+        }
+      }
+      const res = await fetch('/api/brands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: novaMarca.trim(), storeId: storeId })
+      })
+      const data = await res.json()
+      if ('success' in data && data.success && data.id) {
+        setNovaMarca("")
+        setProduto(prev => ({ ...prev, brandId: data.id }))
+        // Atualiza lista de marcas
+        const res2 = await fetch(`/api/brands?storeId=${storeId}`)
+        const data2 = await res2.json()
+        if ('success' in data2 && data2.success && Array.isArray(data2.brands)) setMarcas(data2.brands)
+        toast({ title: 'Marca cadastrada com sucesso!' })
+      } else {
+        toast({ title: 'Erro ao cadastrar marca', description: data.error, variant: 'destructive' })
+      }
+    } catch (err) {
+      toast({ title: 'Erro ao cadastrar marca', description: String(err), variant: 'destructive' })
+    } finally {
+      setAddingBrand(false)
+    }
   }
 
   return (
@@ -98,9 +338,21 @@ export default function NovoProdutoPage() {
           <Button variant="outline" onClick={() => router.back()}>
             Cancelar
           </Button>
-          <Button onClick={handleSave}>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? (
+              <>
+                <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a12 12 0 00-12 12h4z"></path>
+                </svg>
+                Salvando...
+              </>
+            ) : (
+              <>
             <Save className="h-4 w-4 mr-2" />
             Salvar Produto
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -152,6 +404,32 @@ export default function NovoProdutoPage() {
                       placeholder="Ex: VES001"
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="brand">Marca</Label>
+                    <div className="flex gap-2">
+                      <select
+                        id="brand"
+                        value={produto.brandId}
+                        onChange={e => setProduto({ ...produto, brandId: e.target.value })}
+                        className="w-full p-2 border rounded-md"
+                      >
+                        <option value="">Selecione uma marca</option>
+                        {marcas.map((marca) => (
+                          <option key={marca.id} value={marca.id}>{marca.name}</option>
+                        ))}
+                      </select>
+                      <Input
+                        value={novaMarca}
+                        onChange={e => setNovaMarca(e.target.value)}
+                        placeholder="Nova marca"
+                        className="w-40"
+                        disabled={addingBrand}
+                      />
+                      <Button onClick={handleAddMarca} disabled={addingBrand || !novaMarca.trim()} type="button">
+                        {addingBrand ? 'Adicionando...' : 'Adicionar'}
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -168,7 +446,7 @@ export default function NovoProdutoPage() {
                         type="number"
                         step="0.01"
                         value={produto.price}
-                        onChange={(e) => setProduto({ ...produto, price: e.target.value })}
+                        onChange={(e) => handlePriceChange('price', e.target.value)}
                         placeholder="159.90"
                       />
                     </div>
@@ -180,7 +458,7 @@ export default function NovoProdutoPage() {
                         type="number"
                         step="0.01"
                         value={produto.originalPrice}
-                        onChange={(e) => setProduto({ ...produto, originalPrice: e.target.value })}
+                        onChange={(e) => handlePriceChange('originalPrice', e.target.value)}
                         placeholder="199.90"
                       />
                     </div>
@@ -209,16 +487,30 @@ export default function NovoProdutoPage() {
                 <CardContent>
                   <select
                     value={produto.category}
-                    onChange={(e) => setProduto({ ...produto, category: e.target.value })}
-                    className="w-full p-2 border rounded-md"
+                    onChange={e => {
+                      setProduto({ ...produto, category: e.target.value, subcategory: "" })
+                      const cat = categorias.find((c) => String(c.id) === e.target.value)
+                      setSubcategorias(cat && cat.subcategories ? cat.subcategories : [])
+                    }}
+                    className="w-full p-2 border rounded-md mb-2"
                   >
                     <option value="">Selecione uma categoria</option>
                     {categorias.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
+                  {subcategorias.length > 0 && (
+                    <select
+                      value={produto.subcategory}
+                      onChange={e => setProduto({ ...produto, subcategory: e.target.value })}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="">Selecione uma subcategoria</option>
+                      {subcategorias.map((sub) => (
+                        <option key={sub.id} value={sub.id}>{sub.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </CardContent>
               </Card>
 
@@ -263,26 +555,40 @@ export default function NovoProdutoPage() {
                   <ImageIcon className="h-5 w-5" />
                   Imagens do Produto
                 </CardTitle>
-                <CardDescription>Adicione até 10 imagens. A primeira será a imagem principal.</CardDescription>
+                <CardDescription>
+                  Adicione até {photoLimit} imagens ({produto.images.length}/{photoLimit} usadas). A primeira será a imagem principal.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {/* Upload Area */}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <div className={`border-2 border-dashed rounded-lg p-6 text-center ${
+                    produto.images.length >= photoLimit 
+                      ? 'border-gray-200 bg-gray-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}>
                     <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600 mb-2">Clique para fazer upload ou arraste as imagens aqui</p>
+                    <p className="text-sm text-gray-600 mb-2">
+                      {produto.images.length >= photoLimit ? 'Limite de fotos atingido' : 'Clique para fazer upload ou arraste as imagens aqui'}
+                    </p>
                     <p className="text-xs text-gray-500 mb-4">PNG, JPG até 5MB cada</p>
                     <input
                       type="file"
                       multiple
                       accept="image/*"
                       onChange={handleImageUpload}
+                      disabled={uploading || produto.images.length >= photoLimit}
                       className="hidden"
                       id="image-upload"
                     />
-                    <Button variant="outline" size="sm" asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={produto.images.length >= photoLimit}
+                      asChild
+                    >
                       <label htmlFor="image-upload" className="cursor-pointer">
-                        Escolher Imagens
+                        {produto.images.length >= photoLimit ? 'Limite Atingido' : 'Escolher Imagens'}
                       </label>
                     </Button>
                   </div>
@@ -326,6 +632,7 @@ export default function NovoProdutoPage() {
                 <CardDescription>Adicione um vídeo para mostrar o produto (opcional)</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="space-y-4">
                 <div>
                   <Label htmlFor="video">URL do Vídeo</Label>
                   <Input
@@ -337,6 +644,24 @@ export default function NovoProdutoPage() {
                   <p className="text-xs text-muted-foreground mt-1">
                     Suporte para YouTube, Vimeo ou link direto para MP4
                   </p>
+                  </div>
+                  
+                  {produto.video && (
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-2">Preview do Vídeo</h4>
+                      <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+                        {produto.video.includes('youtube.com') || produto.video.includes('youtu.be') ? (
+                          <iframe
+                            src={produto.video.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                            className="w-full h-full rounded-lg"
+                            allowFullScreen
+                          />
+                        ) : (
+                          <p className="text-gray-500 text-sm">Preview disponível apenas para YouTube</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -352,23 +677,49 @@ export default function NovoProdutoPage() {
                 <CardDescription>Selecione os tamanhos disponíveis para este produto</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="space-y-4">
+                  {/* Adicionar novo tamanho */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Novo tamanho (ex: XXG)"
+                      value={newSize}
+                      onChange={(e) => setNewSize(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addNewSize()}
+                    />
+                    <Button onClick={addNewSize} variant="outline">
+                      Adicionar
+                    </Button>
+                  </div>
+                  
+                  {/* Lista de tamanhos */}
                 <div className="flex flex-wrap gap-2">
-                  {tamanhos.map((size) => (
+                    {availableSizes.map((size) => (
+                      <div key={size} className="relative group">
                     <Button
-                      key={size}
                       variant={produto.sizes.includes(size) ? "default" : "outline"}
                       size="sm"
                       onClick={() => toggleSize(size)}
                     >
                       {size}
                     </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeSize(size)}
+                        >
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </div>
                   ))}
                 </div>
+                  
                 {produto.sizes.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm text-muted-foreground">Tamanhos selecionados: {produto.sizes.join(", ")}</p>
                   </div>
                 )}
+                </div>
               </CardContent>
             </Card>
 
@@ -378,23 +729,49 @@ export default function NovoProdutoPage() {
                 <CardDescription>Selecione as cores disponíveis para este produto</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="space-y-4">
+                  {/* Adicionar nova cor */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Nova cor (ex: Azul Marinho)"
+                      value={newColor}
+                      onChange={(e) => setNewColor(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addNewColor()}
+                    />
+                    <Button onClick={addNewColor} variant="outline">
+                      Adicionar
+                    </Button>
+                  </div>
+                  
+                  {/* Lista de cores */}
                 <div className="flex flex-wrap gap-2">
-                  {cores.map((color) => (
+                    {availableColors.map((color) => (
+                      <div key={color} className="relative group">
                     <Button
-                      key={color}
                       variant={produto.colors.includes(color) ? "default" : "outline"}
                       size="sm"
                       onClick={() => toggleColor(color)}
                     >
                       {color}
                     </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeColor(color)}
+                        >
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </div>
                   ))}
                 </div>
+                  
                 {produto.colors.length > 0 && (
                   <div className="mt-4">
                     <p className="text-sm text-muted-foreground">Cores selecionadas: {produto.colors.join(", ")}</p>
                   </div>
                 )}
+                </div>
               </CardContent>
             </Card>
           </div>

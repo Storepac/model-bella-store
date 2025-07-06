@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
+import { v2 as cloudinary } from 'cloudinary'
+
+cloudinary.config({
+  cloud_name: 'mkt-img-db',
+  api_key: '129883571276333',
+  api_secret: 'hiMscg4ZIiwuA1nI-T8dAF7ICN8',
+})
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -41,33 +48,25 @@ export async function POST(request: NextRequest) {
     }
 
     const bytes = await file.arrayBuffer()
-    const buffer = new Uint8Array(bytes)
-    
-    // Generate sequential filename
-    const imagesDir = path.join(process.cwd(), 'public', 'imgs')
-    const existingFiles = fs.readdirSync(imagesDir).filter(f => f.startsWith('img_') && f.endsWith('.jpg'))
-    
-    let nextNumber = 1
-    if (existingFiles.length > 0) {
-      const numbers = existingFiles.map(f => {
-        const match = f.match(/img_(\d+)\.jpg/)
-        return match ? parseInt(match[1]) : 0
-      })
-      nextNumber = Math.max(...numbers) + 1
-    }
-    
-    const filename = `img_${nextNumber}.jpg`
-    const imagePath = path.join(imagesDir, filename)
-    
-    fs.writeFileSync(imagePath, buffer)
-    
+    const buffer = Buffer.from(bytes)
+
+    // Upload para o Cloudinary
+    const uploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream({ folder: 'categorias' }, (error, result) => {
+        if (error) reject(error)
+        else resolve(result)
+      }).end(buffer)
+    })
+
+    // @ts-ignore
+    const url = uploadResult.secure_url
+
     return NextResponse.json({ 
       success: true, 
-      filename,
-      url: `/api/images?filename=${filename}`
+      url
     })
   } catch (error) {
-    console.error('Error uploading image:', error)
+    console.error('Error uploading image to Cloudinary:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

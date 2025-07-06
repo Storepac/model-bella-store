@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -56,6 +56,8 @@ const topProducts = [
 ]
 
 export default function RelatoriosPage() {
+  const [relatorios, setRelatorios] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState("30d")
 
   const currentMonth = salesData[salesData.length - 1]
@@ -68,6 +70,22 @@ export default function RelatoriosPage() {
   const totalViews = productData.reduce((sum, product) => sum + product.views, 0)
   const totalSales = productData.reduce((sum, product) => sum + product.vendas, 0)
   const conversionRate = (totalSales / totalViews) * 100
+
+  useEffect(() => {
+    const fetchRelatorios = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/reports')
+        const data = await res.json()
+        setRelatorios(data.reports || [])
+      } catch (err) {
+        setRelatorios([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchRelatorios()
+  }, [])
 
   return (
     <div className="p-6 space-y-6">

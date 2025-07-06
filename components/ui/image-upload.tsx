@@ -75,7 +75,7 @@ export function ImageUpload({ value, onChange, placeholder = "Clique para fazer 
         <div className="relative">
           <div className="relative w-full h-48 rounded-lg overflow-hidden border-2 border-gray-200">
             <Image
-              src={preview}
+              src={typeof preview === 'string' && preview.startsWith('data:') ? preview : value || preview}
               alt="Preview"
               fill
               className="object-cover"
@@ -113,6 +113,7 @@ export function ImageUpload({ value, onChange, placeholder = "Clique para fazer 
           )}
         </div>
       )}
+      <p className="text-xs text-gray-500 text-center">Tamanho recomendado: 600x400px, JPG ou PNG</p>
     </div>
   )
 } 

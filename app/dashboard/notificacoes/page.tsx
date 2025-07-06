@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ChangeEvent } from "react"
+import { useState, type ChangeEvent, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,16 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Upload, Send } from "lucide-react"
 
-// Mock data
-const customers = [
-  { id: "cus_1", name: "Ana Silva", phone: "11987654321" },
-  { id: "cus_2", name: "Bruno Costa", phone: "21912345678" },
-  { id: "cus_3", name: "Carla Dias", phone: "31988887777" },
-  { id: "cus_4", name: "Daniel Souza", phone: "41999990000" },
-]
-
 export default function NotificacoesPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [notificacoes, setNotificacoes] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -28,6 +22,22 @@ export default function NotificacoesPage() {
       setSelectedFile(null)
     }
   }
+
+  useEffect(() => {
+    const fetchNotificacoes = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/notifications')
+        const data = await res.json()
+        setNotificacoes(data.notifications || [])
+      } catch (err) {
+        setNotificacoes([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchNotificacoes()
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -59,7 +69,7 @@ export default function NotificacoesPage() {
                     <SelectValue placeholder="Selecione um cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {customers.map((customer) => (
+                    {notificacoes.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name} - {customer.phone}
                       </SelectItem>

@@ -52,6 +52,20 @@ export default function CategoryPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [sortBy, setSortBy] = useState('relevance')
 
+  // Função para buscar a categoria raiz (nível 0)
+  async function fetchRootCategory(cat: Category): Promise<Category> {
+    let current = cat
+    while (current.parentId) {
+      const resp = await fetch(`/api/categories?slug=${current.parentId}`)
+      if (resp.ok) {
+        current = await resp.json()
+      } else {
+        break
+      }
+    }
+    return current
+  }
+
   useEffect(() => {
     const fetchCategory = async () => {
       try {
@@ -61,73 +75,17 @@ export default function CategoryPage() {
           setCategory(data)
 
           // Buscar a categoria principal (nível 0)
-          let current = data
-          while (current.parentId) {
-            const resp = await fetch(`/api/categories?slug=${current.parentId}`)
-            if (resp.ok) {
-              current = await resp.json()
-            } else {
-              break
-            }
+          const root = await fetchRootCategory(data)
+          setMainCategory(root)
+
+          // Buscar produtos reais da API para a categoria atual
+          const prodResp = await fetch(`/api/products?categoryId=${data.id}`)
+          if (prodResp.ok) {
+            const prodData = await prodResp.json()
+            setProducts(prodData.products || [])
+          } else {
+            setProducts([])
           }
-          setMainCategory(current)
-          
-          // Mock products - em produção viria da API
-          const mockProducts: Product[] = [
-            {
-              id: '1',
-              name: 'Vestido Floral Elegante',
-              price: 89.90,
-              originalPrice: 129.90,
-              image: '/api/images?filename=img_1.jpg',
-              category: 'Vestidos',
-              isSale: true,
-              discount: 31
-            },
-            {
-              id: '2',
-              name: 'Blusa Básica Algodão',
-              price: 45.90,
-              image: '/api/images?filename=img_2.jpg',
-              category: 'Blusas',
-              isNew: true
-            },
-            {
-              id: '3',
-              name: 'Calça Jeans Skinny',
-              price: 79.90,
-              originalPrice: 99.90,
-              image: '/api/images?filename=img_3.jpg',
-              category: 'Calças',
-              isSale: true,
-              discount: 20
-            },
-            {
-              id: '4',
-              name: 'Saia Midi Plissada',
-              price: 65.90,
-              image: '/api/images?filename=img_4.jpg',
-              category: 'Saias'
-            },
-            {
-              id: '5',
-              name: 'Vestido de Festa Longo',
-              price: 159.90,
-              image: '/api/images?filename=img_5.jpg',
-              category: 'Vestidos'
-            },
-            {
-              id: '6',
-              name: 'Blusa Transparente',
-              price: 55.90,
-              originalPrice: 75.90,
-              image: '/api/images?filename=img_6.jpg',
-              category: 'Blusas',
-              isSale: true,
-              discount: 27
-            }
-          ]
-          setProducts(mockProducts)
         }
       } catch (error) {
         console.error('Erro ao carregar categoria:', error)
@@ -207,147 +165,60 @@ export default function CategoryPage() {
         </div>
       </div>
 
-      {/* Conteúdo Principal */}
       <div className="container mx-auto px-4 py-8">
-        {/* Header com Filtros e Ordenação */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        {/* Se houver subcategorias, mostra elas. Senão, mostra produtos */}
+        {category?.subcategories && category.subcategories.length > 0 ? (
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {category.name}
-            </h2>
-            <p className="text-gray-600">
-              {products.length} produtos encontrados
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Botão de Filtros */}
-            <Button variant="outline" className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Filtros
-            </Button>
-            
-            {/* Ordenação */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  Ordenar por
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setSortBy('relevance')}>
-                  Relevância
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy('price-asc')}>
-                  Menor Preço
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy('price-desc')}>
-                  Maior Preço
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSortBy('name')}>
-                  Nome A-Z
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {/* Modo de Visualização */}
-            <div className="flex border rounded-lg">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="rounded-r-none"
-              >
-                <Grid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="rounded-l-none"
-              >
-                <List className="h-4 w-4" />
-              </Button>
+            <h2 className="text-2xl font-bold mb-6">Subcategorias</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {category.subcategories.map((subcat) => (
+                <Card key={subcat.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="relative h-40">
+                    <Image
+                      src={subcat.image}
+                      alt={subcat.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <CardContent className="p-4">
+                    <h3 className="text-lg font-semibold mb-2">{subcat.name}</h3>
+                    <p className="text-gray-600 mb-2">{subcat.description}</p>
+                    <Button asChild variant="outline" className="w-full">
+                      <a href={`/categoria/${subcat.slug}`}>Ver {subcat.name}</a>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
-        </div>
-
-        <Separator className="mb-6" />
-
-        {/* Grid de Produtos */}
-        <div className={
-          viewMode === 'grid' 
-            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-            : 'space-y-4'
-        }>
-          {products.map((product) => (
-            <Card key={product.id} className="group hover:shadow-lg transition-shadow">
-              <CardContent className="p-0">
-                <div className="relative aspect-square overflow-hidden">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  
-                  {/* Badges */}
-                  <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    {product.isNew && (
-                      <Badge className="bg-green-500 text-white">Novo</Badge>
-                    )}
-                    {product.isSale && (
-                      <Badge className="bg-red-500 text-white">
-                        -{product.discount}%
-                      </Badge>
-                    )}
+        ) : (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Produtos</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map((product) => (
+                <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="relative h-40">
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      className="object-cover"
+                    />
                   </div>
-                </div>
-                
-                <div className="p-4">
-                  <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">
-                    {product.name}
-                  </h3>
-                  
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg font-bold text-gray-900">
-                      {formatPrice(product.price)}
-                    </span>
-                    {product.originalPrice && (
-                      <span className="text-sm text-gray-500 line-through">
-                        {formatPrice(product.originalPrice)}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <p className="text-sm text-gray-600 mb-3">
-                    {product.category}
-                  </p>
-                  
-                  <Button className="w-full">
-                    Adicionar ao Carrinho
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Paginação */}
-        <div className="flex justify-center mt-12">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              Anterior
-            </Button>
-            <Button variant="default" size="sm">1</Button>
-            <Button variant="outline" size="sm">2</Button>
-            <Button variant="outline" size="sm">3</Button>
-            <Button variant="outline" size="sm">
-              Próxima
-            </Button>
+                  <CardContent className="p-4">
+                    <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
+                    <p className="text-pink-600 font-bold mb-2">{formatPrice(product.price)}</p>
+                    <Button variant="outline" className="w-full">Ver detalhes</Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+        {products.length === 0 && (!category?.subcategories || category.subcategories.length === 0) ? (
+          <div className="text-center text-gray-500 py-8">Nenhum produto encontrado para esta categoria.</div>
+        ) : null}
       </div>
     </div>
   )

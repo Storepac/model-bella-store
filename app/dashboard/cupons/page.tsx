@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,51 +18,9 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Plus, Search, MoreHorizontal, Edit, Trash2, Copy, Tag, Calendar, Percent, DollarSign } from "lucide-react"
 
-// Mock data para cupons
-const mockCupons = [
-  {
-    id: "1",
-    code: "PRIMEIRA10",
-    description: "10% de desconto na primeira compra",
-    type: "percentage",
-    value: 10,
-    minValue: 100,
-    maxUses: 100,
-    currentUses: 45,
-    expiresAt: "2024-12-31",
-    isActive: true,
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "2",
-    code: "FRETE20",
-    description: "R$ 20 de desconto no frete",
-    type: "fixed",
-    value: 20,
-    minValue: 0,
-    maxUses: 500,
-    currentUses: 234,
-    expiresAt: "2024-06-30",
-    isActive: true,
-    createdAt: "2024-02-01",
-  },
-  {
-    id: "3",
-    code: "DESCONTO15",
-    description: "15% de desconto acima de R$ 150",
-    type: "percentage",
-    value: 15,
-    minValue: 150,
-    maxUses: 200,
-    currentUses: 89,
-    expiresAt: "2024-08-15",
-    isActive: false,
-    createdAt: "2024-01-20",
-  },
-]
-
 export default function CuponsPage() {
-  const [cupons, setCupons] = useState(mockCupons)
+  const [cupons, setCupons] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingCupon, setEditingCupon] = useState<any>(null)
@@ -75,6 +33,22 @@ export default function CuponsPage() {
     maxUses: "",
     expiresAt: "",
   })
+
+  useEffect(() => {
+    const fetchCupons = async () => {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/coupons')
+        const data = await res.json()
+        setCupons(data.coupons || [])
+      } catch (err) {
+        setCupons([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchCupons()
+  }, [])
 
   const filteredCupons = cupons.filter(
     (cupon) =>

@@ -1,23 +1,64 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Search, ShoppingBag, Menu, X, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useCart } from "@/lib/cart-context"
 import Link from "next/link"
-import { storeData } from "@/lib/store-data"
+import { useStoreData } from "@/hooks/use-store-data"
 import { CategoryMenu, CategoryMenuMobile } from "@/components/category-menu"
 import { MegaMenu } from "@/components/mega-menu"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const { getItemCount, toggleCart } = useCart()
+  const { storeData, loading } = useStoreData()
 
-  const announcementText = [storeData.announcement1, storeData.announcement2, storeData.announcementContact]
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const user = localStorage.getItem('user')
+      setIsLoggedIn(!!user)
+    }
+  }, [])
+
+  const handleSettingsClick = () => {
+    if (isLoggedIn) {
+      window.location.href = '/dashboard'
+    } else {
+      window.location.href = '/login'
+    }
+  }
+
+  const announcementText = storeData ? [storeData.announcement1, storeData.announcement2, storeData.announcementContact]
     .filter(Boolean)
-    .join(" • ")
+    .join(" • ") : "Carregando..."
+
+  if (loading) {
+    return (
+      <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
+        <div className="bg-gray-900 text-white text-sm py-2">
+          <div className="container mx-auto px-4">
+            <div className="text-center">Carregando...</div>
+          </div>
+        </div>
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex-1 md:flex-none">
+              <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+    )
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
@@ -45,7 +86,7 @@ export function Header() {
           <div className="flex-1 md:flex-none">
             <Link href="/">
               <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent cursor-pointer">
-                {storeData.name}
+                {storeData?.name || "Bella Store"}
               </h1>
             </Link>
           </div>
@@ -65,10 +106,14 @@ export function Header() {
             <Button variant="ghost" size="icon" className="hidden md:flex">
               <Search className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="hidden md:flex" asChild>
-              <Link href="/login">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="hidden md:flex"
+              onClick={handleSettingsClick}
+              title={isLoggedIn ? "Ir para Dashboard" : "Fazer Login"}
+            >
                 <Settings className="h-5 w-5" />
-              </Link>
             </Button>
             <Button variant="ghost" size="icon" className="relative" onClick={toggleCart}>
               <ShoppingBag className="h-5 w-5" />
