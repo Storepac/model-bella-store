@@ -419,7 +419,7 @@ export default function ProdutosPage() {
             </TooltipProvider>
           ) : (
             <Button asChild className="w-full sm:w-auto py-3 text-base sm:py-2 mt-2 sm:mt-0">
-              <Link href="/dashboard/produtos/novo">
+          <Link href="/dashboard/produtos/novo">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Novo Produto
               </Link>
