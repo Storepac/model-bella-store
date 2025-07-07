@@ -124,6 +124,10 @@ export default function DashboardSidebar() {
       }
     }
     fetchPlan()
+    // Adicionar listener para atualizar plano/limite quando produtos mudarem
+    const handler = () => fetchPlan()
+    window.addEventListener('productsChanged', handler)
+    return () => window.removeEventListener('productsChanged', handler)
   }, [])
 
   if (isLoading) {
@@ -151,6 +155,14 @@ export default function DashboardSidebar() {
         <button onClick={handleLogout} className="m-4 px-4 py-2 rounded bg-red-100 text-red-700 hover:bg-red-200 font-semibold">Sair</button>
       </aside>
     )
+  }
+
+  // Adicionar função para fechar sidebar no mobile
+  const closeSidebarOnMobile = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      const sidebar = document.querySelector('.sidebar-mobile')
+      if (sidebar) sidebar.classList.remove('open')
+    }
   }
 
   return (
@@ -190,7 +202,7 @@ export default function DashboardSidebar() {
               <SidebarMenu>
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton asChild onClick={closeSidebarOnMobile}>
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>

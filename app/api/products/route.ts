@@ -71,6 +71,18 @@ let products = [
   }
 ]
 
+// Função para gerar slug a partir do nome
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/[^a-z0-9\s-]/g, '') // Remove caracteres especiais
+    .replace(/\s+/g, '-') // Substitui espaços por hífens
+    .replace(/-+/g, '-') // Remove hífens duplicados
+    .trim()
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
 
@@ -86,6 +98,7 @@ export async function GET(request: NextRequest) {
         p.name,
         p.description,
         p.sku,
+        p.slug,
         p.price,
         p.original_price,
         p.categoryId,
@@ -97,6 +110,8 @@ export async function GET(request: NextRequest) {
         p.isFeatured,
         p.isPromotion,
         p.isLaunch,
+        p.isNew,
+        p.isActive,
         p.stock,
         p.storeId,
         p.createdAt,
@@ -115,6 +130,7 @@ export async function GET(request: NextRequest) {
     // Formatar dados para o frontend
     const formattedProducts = (products as any[]).map(product => ({
       ...product,
+      slug: product.slug || `produto-${product.id}`, // Gerar slug se não existir
       images: product.images ? product.images.split(',') : [],
       price: `R$ ${parseFloat(product.price).toFixed(2)}`,
       original_price: product.original_price ? `R$ ${parseFloat(product.original_price).toFixed(2)}` : null,
@@ -147,20 +163,37 @@ export async function POST(request: NextRequest) {
     // Pegar storeId do body, default 1
     const storeId = productData.storeId ? Number(productData.storeId) : 1;
     
-    // Verificar limites antes de cadastrar
-    const limitsResponse = await fetch(`http://localhost:3001/api/store-limits/${storeId}`)
-    const limitsData = await limitsResponse.json()
+    // Gerar slug baseado no nome
+    const baseSlug = generateSlug(productData.name)
+    let slug = baseSlug
+    let counter = 1
     
-    if (limitsData.success && limitsData.data.products_used >= limitsData.data.products_limit) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Limite de produtos atingido para seu plano' 
-        }, 
-        { status: 403 }
-      )
+    // Verificar se slug já existe e criar um único
+    while (true) {
+      const [existingSlug] = await pool.query('SELECT id FROM products WHERE slug = ? AND storeId = ?', [slug, storeId])
+      if ((existingSlug as any[]).length === 0) {
+        break
+      }
+      slug = `${baseSlug}-${counter}`
+      counter++
     }
     
+    // --- CHECAGEM DE LIMITE DE PRODUTOS ---
+    // Buscar limite do plano na tabela settings
+    const settingsRows = await pool.query('SELECT limite_produtos FROM settings WHERE storeId = ?', [storeId]);
+    const settings = settingsRows[0][0];
+    const productsLimit = settings && settings.limite_produtos ? Number(settings.limite_produtos) : 5;
+    // Contar produtos já cadastrados
+    const countRows = await pool.query('SELECT COUNT(*) as total FROM products WHERE storeId = ?', [storeId]);
+    const totalProducts = countRows[0][0].total;
+    if (totalProducts >= productsLimit) {
+      return NextResponse.json({
+        success: false,
+        error: 'Limite de produtos atingido para seu plano.'
+      }, { status: 403 });
+    }
+    // --- FIM CHECAGEM DE LIMITE ---
+
     // Verificar SKU duplicado se informado
     if (productData.sku) {
       const [skuCheck] = await pool.query('SELECT id FROM products WHERE sku = ?', [productData.sku])
@@ -172,17 +205,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Inserir produto sem SKU se não informado
+    // Inserir produto com slug
     const [result] = await pool.query(`
       INSERT INTO products (
-        name, description, sku, price, original_price, 
+        name, description, sku, slug, price, original_price, 
         categoryId, brandId, status, isFeatured, isPromotion, 
-        isLaunch, stock, storeId
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        isLaunch, isNew, isActive, stock, storeId
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       productData.name,
       productData.description,
       productData.sku || null,
+      slug,
       productData.price,
       productData.original_price,
       productData.categoryId,
@@ -191,6 +225,8 @@ export async function POST(request: NextRequest) {
       productData.isFeatured || false,
       productData.isPromotion || false,
       productData.isLaunch || false,
+      productData.isNew || false,
+      productData.isActive !== undefined ? productData.isActive : true,
       productData.stock || 0,
       storeId
     ])
@@ -216,24 +252,43 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // --- VARIANTES ---
+    // Se vierem variantes, salvar combinações (preço, estoque, ativo) ou usar padrão do produto
+    if (productData.variants && Array.isArray(productData.variants) && productData.variants.length > 0) {
+      for (const variant of productData.variants) {
+        // variant: { id, options: [op1, op2], price, stock, isActive }
+        await pool.query(`
+          INSERT INTO product_variants (productId, variantId, options, price, stock, isActive)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `, [
+          productId,
+          variant.id,
+          JSON.stringify(variant.options || []),
+          variant.price !== undefined ? variant.price : productData.price,
+          variant.stock !== undefined ? variant.stock : productData.stock,
+          variant.isActive !== undefined ? variant.isActive : true
+        ])
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Produto cadastrado com sucesso',
       product: {
         id: productId,
         ...productData,
+        slug: slug,
         sku: productData.sku || String(productId),
         storeId,
         createdAt: new Date().toISOString()
       }
-    })
-    
+    }, { status: 201 })
   } catch (error) {
     console.error('Error creating product:', error)
-    return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Internal server error' 
+    }, { status: 500 })
   }
 }
 
@@ -269,15 +324,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
     }
 
-    const productIndex = products.findIndex(p => p.id === id)
-    if (productIndex === -1) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 })
-    }
+    // Remover do banco de dados
+    await pool.query('DELETE FROM products WHERE id = ?', [id])
+    // Opcional: remover variantes e mídias associadas, se necessário
 
-    products.splice(productIndex, 1)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting product:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-} 
+}

@@ -9,6 +9,7 @@ import { Layout } from "@/components/layout"
 import { CartToast } from "@/components/cart-toast"
 import { useCart } from "@/lib/cart-context"
 import Image from "next/image"
+import { resolveStoreId } from '@/lib/store-id'
 
 export default function ProductPage() {
   const params = useParams()
@@ -24,11 +25,15 @@ export default function ProductPage() {
   const [product, setProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [storeId, setStoreId] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchProduct = async () => {
+      setLoading(true)
       try {
-        const response = await fetch(`/api/products/${params.id}`, {
+        const resolvedStoreId = await resolveStoreId()
+        setStoreId(resolvedStoreId)
+        const response = await fetch(`/api/products/${params.id}?storeId=${resolvedStoreId}`, {
           cache: 'no-store'
         })
         const data = await response.json()

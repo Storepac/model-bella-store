@@ -5,6 +5,7 @@ import { Heart, ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface Product {
   id: string
@@ -14,6 +15,8 @@ interface Product {
   image: string
   category: string
   isNew?: boolean
+  isLaunch?: boolean
+  isPromotion?: boolean
   discount?: number
 }
 
@@ -46,10 +49,40 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {product.isNew && <Badge className="bg-pink-500 hover:bg-pink-600 text-white">Novo</Badge>}
-          {discountPercentage > 0 && (
-            <Badge className="bg-red-500 hover:bg-red-600 text-white">-{discountPercentage}%</Badge>
-          )}
+          <TooltipProvider>
+            {product.isNew && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge className="bg-blue-500 hover:bg-blue-600 text-white">Novo</Badge>
+                </TooltipTrigger>
+                <TooltipContent>Produto recém-cadastrado</TooltipContent>
+              </Tooltip>
+            )}
+            {product.isLaunch && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge className="bg-green-500 hover:bg-green-600 text-white">Lançamento</Badge>
+                </TooltipTrigger>
+                <TooltipContent>Produto em lançamento especial</TooltipContent>
+              </Tooltip>
+            )}
+            {product.isPromotion && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge className="bg-red-500 hover:bg-red-600 text-white">Promoção</Badge>
+                </TooltipTrigger>
+                <TooltipContent>Produto em oferta especial</TooltipContent>
+              </Tooltip>
+            )}
+            {discountPercentage > 0 && !product.isPromotion && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge className="bg-red-500 hover:bg-red-600 text-white">-{discountPercentage}%</Badge>
+                </TooltipTrigger>
+                <TooltipContent>Desconto aplicado</TooltipContent>
+              </Tooltip>
+            )}
+          </TooltipProvider>
         </div>
 
         {/* Wishlist Button */}

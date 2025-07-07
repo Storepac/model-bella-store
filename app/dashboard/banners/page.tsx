@@ -20,12 +20,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, Upload, MoreHorizontal, Edit, Trash2, ImageIcon } from "lucide-react"
 import Image from "next/image"
 import { bannerPositions } from "@/lib/banner-data"
+import { toast } from "@/components/ui/use-toast"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
 export default function BannersPage() {
   const [banners, setBanners] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingBanner, setEditingBanner] = useState<any>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [storeId, setStoreId] = useState(1)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -36,52 +41,107 @@ export default function BannersPage() {
   })
 
   useEffect(() => {
-    const fetchBanners = async () => {
-      setLoading(true)
-      try {
-        const res = await fetch('/api/banners')
-        const data = await res.json()
-        setBanners(data.banners || [])
-      } catch (err) {
-        setBanners([])
-      } finally {
-        setLoading(false)
+    // Obter storeId do usuário logado
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('user')
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr)
+          if (user.storeId) {
+            setStoreId(user.storeId)
+          }
+        } catch {}
       }
     }
-    fetchBanners()
   }, [])
 
-  const handleSave = () => {
-    if (editingBanner) {
-      setBanners(
-        banners.map((banner) =>
-          banner.id === editingBanner.id
-            ? {
-                ...banner,
-                ...formData,
-              }
-            : banner,
-        ),
-      )
-    } else {
-      const newBanner = {
-        id: Date.now().toString(),
-        ...formData,
-        isActive: true,
-      }
-      setBanners([...banners, newBanner])
-    }
+  useEffect(() => {
+    fetchBanners()
+  }, [storeId])
 
-    setFormData({
-      title: "",
-      description: "",
-      image: "",
-      link: "",
-      buttonText: "",
-      position: "homepage-middle-1",
-    })
-    setEditingBanner(null)
-    setIsDialogOpen(false)
+  const fetchBanners = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/banners?storeId=${storeId}`)
+      const data = await res.json()
+      setBanners(data.banners || [])
+    } catch (err) {
+      console.error('Erro ao carregar banners:', err)
+      setBanners([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const payload = {
+        ...formData,
+        storeId,
+      }
+
+      if (editingBanner) {
+        // Atualizar banner existente
+        const res = await fetch('/api/banners', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: editingBanner.id,
+            ...payload,
+          }),
+        })
+
+        if (!res.ok) {
+          throw new Error('Erro ao atualizar banner')
+        }
+
+        toast({
+          title: "Banner atualizado!",
+          description: "O banner foi atualizado com sucesso.",
+        })
+      } else {
+        // Criar novo banner
+        const res = await fetch('/api/banners', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+
+        if (!res.ok) {
+          throw new Error('Erro ao criar banner')
+        }
+
+        toast({
+          title: "Banner criado!",
+          description: "O banner foi criado com sucesso.",
+        })
+      }
+
+      // Recarregar banners
+      await fetchBanners()
+      
+      // Limpar formulário
+      setFormData({
+        title: "",
+        description: "",
+        image: "",
+        link: "",
+        buttonText: "",
+        position: "homepage-middle-1",
+      })
+      setEditingBanner(null)
+      setIsDialogOpen(false)
+    } catch (error) {
+      console.error('Erro ao salvar banner:', error)
+      toast({
+        title: "Erro!",
+        description: "Não foi possível salvar o banner. Tente novamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleEdit = (banner: any) => {
@@ -92,23 +152,96 @@ export default function BannersPage() {
       image: banner.image,
       link: banner.link,
       buttonText: banner.buttonText || "",
-      position: banner.position,
+      position: banner.position || "homepage-middle-1",
     })
     setIsDialogOpen(true)
   }
 
-  const handleDelete = (id: string) => {
-    if (confirm("Tem certeza que deseja excluir este banner?")) {
-      setBanners(banners.filter((banner) => banner.id !== id))
+  const handleDelete = async () => {
+    if (!deleteId) return
+    
+    try {
+      const res = await fetch('/api/banners', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: deleteId,
+          storeId,
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Erro ao deletar banner')
+      }
+
+      toast({
+        title: "Banner excluído!",
+        description: "O banner foi excluído com sucesso.",
+      })
+
+      // Recarregar banners
+      await fetchBanners()
+    } catch (error) {
+      console.error('Erro ao deletar banner:', error)
+      toast({
+        title: "Erro!",
+        description: "Não foi possível excluir o banner. Tente novamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleteId(null)
     }
   }
 
-  const toggleActive = (id: string) => {
-    setBanners(banners.map((banner) => (banner.id === id ? { ...banner, isActive: !banner.isActive } : banner)))
+  const toggleActive = async (id: string) => {
+    const banner = banners.find(b => b.id === id)
+    if (!banner) return
+
+    try {
+      const res = await fetch('/api/banners', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: id,
+          isActive: !banner.isActive,
+          storeId,
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Erro ao atualizar status do banner')
+      }
+
+      // Recarregar banners
+      await fetchBanners()
+      
+      toast({
+        title: banner.isActive ? "Banner desativado!" : "Banner ativado!",
+        description: `O banner foi ${banner.isActive ? 'desativado' : 'ativado'} com sucesso.`,
+      })
+    } catch (error) {
+      console.error('Erro ao alterar status do banner:', error)
+      toast({
+        title: "Erro!",
+        description: "Não foi possível alterar o status do banner.",
+        variant: "destructive",
+      })
+    }
   }
 
   const getPositionLabel = (position: string) => {
     return bannerPositions.find((p) => p.value === position)?.label || position
+  }
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+          <p>Carregando banners...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -138,7 +271,7 @@ export default function BannersPage() {
               Novo Banner
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-full w-full sm:max-w-2xl p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>{editingBanner ? "Editar Banner" : "Novo Banner"}</DialogTitle>
               <DialogDescription>
@@ -219,11 +352,22 @@ export default function BannersPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t mt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDialogOpen(false)} 
+                  className="flex-1 py-3 text-base"
+                  disabled={saving}
+                >
                   Cancelar
                 </Button>
-                <Button onClick={handleSave}>{editingBanner ? "Salvar Alterações" : "Criar Banner"}</Button>
+                <Button 
+                  onClick={handleSave} 
+                  className="flex-1 py-3 text-base"
+                  disabled={saving}
+                >
+                  {saving ? 'Salvando...' : (editingBanner ? "Salvar Alterações" : "Criar Banner")}
+                </Button>
               </div>
             </div>
           </DialogContent>
@@ -249,11 +393,9 @@ export default function BannersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Banners Ativos</p>
-                <p className="text-2xl font-bold text-green-600">{banners.filter((b) => b.isActive).length}</p>
+                <p className="text-2xl font-bold">{banners.filter(b => b.isActive).length}</p>
               </div>
-              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                <div className="h-4 w-4 bg-green-500 rounded-full"></div>
-              </div>
+              <ImageIcon className="h-8 w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
@@ -262,12 +404,10 @@ export default function BannersPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Header</p>
-                <p className="text-2xl font-bold">{banners.filter((b) => b.position === "header").length}</p>
+                <p className="text-sm text-muted-foreground">Banners Inativos</p>
+                <p className="text-2xl font-bold">{banners.filter(b => !b.isActive).length}</p>
               </div>
-              <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <div className="h-4 w-4 bg-blue-500 rounded-full"></div>
-              </div>
+              <ImageIcon className="h-8 w-8 text-red-500" />
             </div>
           </CardContent>
         </Card>
@@ -276,90 +416,118 @@ export default function BannersPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Outros</p>
-                <p className="text-2xl font-bold">{banners.filter((b) => b.position !== "header").length}</p>
+                <p className="text-sm text-muted-foreground">Posições Usadas</p>
+                <p className="text-2xl font-bold">{new Set(banners.map(b => b.position)).size}</p>
               </div>
-              <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
-                <div className="h-4 w-4 bg-purple-500 rounded-full"></div>
-              </div>
+              <ImageIcon className="h-8 w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Banners Table */}
+      {/* Tabela de Banners */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Banners</CardTitle>
-          <CardDescription>Gerencie todos os banners da sua loja</CardDescription>
+          <CardTitle>Banners Cadastrados</CardTitle>
+          <CardDescription>Lista de todos os banners da sua loja</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Banner</TableHead>
-                <TableHead>Posição</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {banners.map((banner) => (
-                <TableRow key={banner.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-24 h-12 bg-gray-100 rounded-md overflow-hidden">
-                        <Image
-                          src={banner.image || "/placeholder.svg"}
-                          alt={banner.title}
-                          fill
-                          className="object-cover"
-                        />
+          {banners.length === 0 ? (
+            <div className="text-center py-8">
+              <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">Nenhum banner cadastrado</p>
+              <p className="text-gray-400 text-sm">Clique em "Novo Banner" para criar o primeiro</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Imagem</TableHead>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Posição</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {banners.map((banner) => (
+                  <TableRow key={banner.id}>
+                    <TableCell>
+                      <div className="w-16 h-10 bg-gray-100 rounded overflow-hidden">
+                        {banner.image ? (
+                          <Image
+                            src={banner.image}
+                            alt={banner.title}
+                            width={64}
+                            height={40}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="h-4 w-4 text-gray-400" />
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <p className="font-medium">{banner.title}</p>
-                        <p className="text-sm text-muted-foreground">{banner.link}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{getPositionLabel(banner.position)}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <button onClick={() => toggleActive(banner.id)}>
+                    </TableCell>
+                    <TableCell className="font-medium">{banner.title}</TableCell>
+                    <TableCell>{getPositionLabel(banner.position)}</TableCell>
+                    <TableCell>
                       <Badge
                         variant={banner.isActive ? "default" : "secondary"}
-                        className={banner.isActive ? "bg-green-100 text-green-800" : ""}
+                        className={`cursor-pointer ${banner.isActive ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-500 hover:bg-gray-600'}`}
+                        onClick={() => toggleActive(banner.id)}
                       >
                         {banner.isActive ? "Ativo" : "Inativo"}
                       </Badge>
-                    </button>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(banner)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(banner.id)}>
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Abrir menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(banner)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => setDeleteId(banner.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este banner? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

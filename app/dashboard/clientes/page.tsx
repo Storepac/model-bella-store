@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Search, Filter, MoreHorizontal, Eye, MessageSquare, Users, ShoppingBag, Calendar, Star } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
 
 const statusConfig = {
   new: { label: "Novo", color: "bg-blue-100 text-blue-800" },
@@ -148,34 +149,20 @@ Qualquer dúvida, estou aqui para ajudar! 😊`
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Buscar por nome, email ou telefone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border rounded-md text-sm bg-white"
-              >
-                <option value="all">Todos os Status</option>
-                {Object.entries(statusConfig).map(([status, config]) => (
-                  <option key={status} value={status}>
-                    {config.label}
-                  </option>
-                ))}
-              </select>
-              <Button variant="outline" size="sm" className="bg-white">
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
-              </Button>
-            </div>
+          <div className="flex flex-col gap-3 md:flex-row md:gap-4 w-full mb-4">
+            <Input className="w-full" placeholder="Buscar por nome, email ou telefone..." />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md text-sm bg-white"
+            >
+              <option value="all">Todos os Status</option>
+              {Object.entries(statusConfig).map(([status, config]) => (
+                <option key={status} value={status}>
+                  {config.label}
+                </option>
+              ))}
+            </select>
           </div>
         </CardContent>
       </Card>
@@ -187,8 +174,8 @@ Qualquer dúvida, estou aqui para ajudar! 😊`
           <CardDescription>{filteredClientes.length} cliente(s) encontrado(s)</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto w-full rounded-lg border border-gray-200 bg-white shadow-sm">
+            <Table className="min-w-[700px] w-full text-sm">
               <TableHeader>
                 <TableRow>
                   <TableHead>Cliente</TableHead>
@@ -266,7 +253,7 @@ Qualquer dúvida, estou aqui para ajudar! 😊`
 
       {/* Detalhes do Cliente */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-full w-full sm:max-w-2xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Detalhes do Cliente</DialogTitle>
             <DialogDescription>Informações completas do cliente</DialogDescription>
@@ -370,19 +357,16 @@ Qualquer dúvida, estou aqui para ajudar! 😊`
               </Card>
 
               {/* Ações */}
-              <div className="flex gap-2 pt-4 border-t">
-                <Button onClick={() => sendWhatsApp(selectedCliente)} className="flex-1">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Enviar WhatsApp
-                </Button>
-                <Button variant="outline" onClick={() => setIsDetailOpen(false)}>
-                  Fechar
-                </Button>
+              <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+                <Button onClick={() => { sendWhatsApp(selectedCliente); toast({ title: 'Mensagem enviada!', description: 'O WhatsApp foi aberto para contato com o cliente.', variant: 'success' }) }} className="flex-1 py-3 text-base">Enviar WhatsApp</Button>
+                <Button variant="outline" onClick={() => setIsDetailOpen(false)} className="flex-1 py-3 text-base">Fechar</Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      <Button className="w-full py-3 text-base md:w-auto md:py-2 mt-2 md:mt-0">Novo Cliente</Button>
     </div>
   )
 }

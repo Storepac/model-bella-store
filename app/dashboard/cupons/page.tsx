@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Plus, Search, MoreHorizontal, Edit, Trash2, Copy, Tag, Calendar, Percent, DollarSign } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
 
 export default function CuponsPage() {
   const [cupons, setCupons] = useState<any[]>([])
@@ -195,7 +196,7 @@ export default function CuponsPage() {
               Novo Cupom
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-full w-full sm:max-w-2xl p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>{editingCupon ? "Editar Cupom" : "Novo Cupom"}</DialogTitle>
               <DialogDescription>
@@ -289,11 +290,9 @@ export default function CuponsPage() {
                 />
               </div>
 
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSave}>{editingCupon ? "Salvar" : "Criar"}</Button>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t mt-4">
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1 py-3 text-base">Cancelar</Button>
+                <Button onClick={() => { handleSave(); toast({ title: editingCupon ? 'Cupom atualizado!' : 'Cupom criado!', variant: 'success' }); }} className="flex-1 py-3 text-base">{editingCupon ? "Salvar" : "Criar"}</Button>
               </div>
             </div>
           </DialogContent>
@@ -381,8 +380,8 @@ export default function CuponsPage() {
           <CardDescription>{filteredCupons.length} cupom(ns) encontrado(s)</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto w-full rounded-lg border border-gray-200 bg-white shadow-sm mb-4">
+            <Table className="min-w-[700px] w-full text-sm">
               <TableHeader>
                 <TableRow>
                   <TableHead>Código</TableHead>

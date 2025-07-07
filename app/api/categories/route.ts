@@ -21,14 +21,30 @@ async function getCategoriesTree(parentId: number | null = null, storeId: number
   const categories = rows as any[]
   for (const cat of categories) {
     cat.isActive = Boolean(cat.isActive)
+    // Conta produtos diretamente na categoria
+    const [prodCountRows] = await pool.query(
+      'SELECT COUNT(*) as count FROM products WHERE categoryId = ? AND storeId = ?',
+      [cat.id, storeId]
+    )
+    let total = prodCountRows[0]?.count || 0
+    // Soma produtos das subcategorias recursivamente
     cat.subcategories = await getCategoriesTree(cat.id, storeId)
+    for (const sub of cat.subcategories) {
+      total += sub.productCount || 0
+    }
+    cat.productCount = total
   }
   return categories
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const categoriesTree = await getCategoriesTree(null)
+    // Pegar storeId da query string, default 1
+    const { searchParams } = new URL(request.url)
+    const storeIdParam = searchParams.get('storeId')
+    const storeId = storeIdParam ? Number(storeIdParam) : 1;
+    
+    const categoriesTree = await getCategoriesTree(null, storeId)
     return NextResponse.json(categoriesTree)
   } catch (error: any) {
     console.error('Error fetching categories:', error)
@@ -39,6 +55,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    // Pegar storeId do body, default 1
+    const storeId = body.storeId ? Number(body.storeId) : 1;
+    
     const [result] = await pool.query(
       'INSERT INTO categories (name, description, image, slug, parentId, level, isActive, `order`, storeId, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())',
       [
@@ -50,7 +69,7 @@ export async function POST(request: NextRequest) {
         body.level || 0,
         body.isActive !== undefined ? body.isActive : 1,
         body.order || 0,
-        body.storeId || 1,
+        storeId,
       ]
     )
     return NextResponse.json({ success: true, id: (result as any).insertId }, { status: 201 })
@@ -63,16 +82,31 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, ...updateData } = body
+    const { id, storeId: bodyStoreId, ...updateData } = body
+    const storeId = bodyStoreId ? Number(bodyStoreId) : 1;
+    
+    // Verificar se a categoria pertence à loja antes de editar
+    const [categoryCheck] = await pool.query('SELECT id FROM categories WHERE id = ? AND storeId = ?', [id, storeId])
+    if ((categoryCheck as any[]).length === 0) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Categoria não encontrada ou não pertence à sua loja.' 
+      }, { status: 404 })
+    }
+    
+    const allowedFields = ['name', 'description', 'image', 'slug', 'parentId', 'level', 'isActive', 'order']
     const fields = []
     const values = []
     for (const key in updateData) {
-      fields.push(`\`${key}\` = ?`)
-      values.push(updateData[key])
+      if (allowedFields.includes(key)) {
+        fields.push(`\`${key}\` = ?`)
+        values.push(updateData[key])
+      }
     }
     values.push(id)
+    values.push(storeId)
     await pool.query(
-      `UPDATE categories SET ${fields.join(', ')}, updatedAt = NOW() WHERE id = ?`,
+      `UPDATE categories SET ${fields.join(', ')}, updatedAt = NOW() WHERE id = ? AND storeId = ?`,
       values
     )
     return NextResponse.json({ success: true })
@@ -83,18 +117,6 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
-    if (!id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 })
-    }
-    // Remove subcategorias primeiro
-    await pool.query('DELETE FROM categories WHERE parentId = ?', [id])
-    await pool.query('DELETE FROM categories WHERE id = ?', [id])
-    return NextResponse.json({ success: true })
-  } catch (error: any) {
-    console.error('Error deleting category:', error)
-    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 })
-  }
-} 
+  // Implemente a lógica para deletar uma categoria
+  return NextResponse.json({ error: 'Method not implemented' }, { status: 501 })
+}

@@ -62,16 +62,40 @@ export async function POST(request: Request) {
   }
 }
 
+function safeParam(v: unknown): string | null { return v === undefined ? null : String(v) }
+
 export async function PUT(request: Request) {
   try {
     const body = await request.json()
-    let { id, password, name, description, cnpj, inscricao_estadual, whatsapp, email, cep, rua, numero, bairro, cidade, uf, endereco: enderecoTextoEdit, instagram, facebook, youtube, horarios, politicas_troca, politicas_gerais, isActive, plan, store_code } = body
+    console.log('Payload recebido no PUT /api/stores:', body)
+    let { id, password, name, description, cnpj, inscricao_estadual, whatsapp, email, cep, rua, numero, bairro, cidade, uf, endereco: enderecoTextoEdit, instagram, facebook, youtube, horarios, politicas_troca, politicas_gerais, isActive, plan, store_code, announcement1, announcement2, announcementContact } = body
     if (store_code) store_code = store_code.trim().toLowerCase()
     let endereco = enderecoTextoEdit && enderecoTextoEdit.trim().length ? enderecoTextoEdit : null
     if (!endereco && rua && numero && bairro && cidade && uf && cep) {
       endereco = `${rua}, ${numero} - ${bairro}, ${cidade}/${uf} - CEP: ${cep}`
     }
-    await query(`UPDATE stores SET name=?, description=?, cnpj=?, inscricao_estadual=?, whatsapp=?, email=?, endereco=COALESCE(?, endereco), instagram=?, facebook=?, youtube=?, horarios=?, politicas_troca=?, politicas_gerais=?, isActive=?, updatedAt=NOW() WHERE id=?`, [name, description, cnpj, inscricao_estadual, whatsapp, email, endereco, instagram, facebook, youtube, horarios, politicas_troca, politicas_gerais, isActive, id])
+    const updateParams = [
+      safeParam(name),
+      safeParam(description),
+      safeParam(cnpj),
+      safeParam(inscricao_estadual),
+      safeParam(whatsapp),
+      safeParam(email),
+      safeParam(endereco),
+      safeParam(instagram),
+      safeParam(facebook),
+      safeParam(youtube),
+      safeParam(horarios),
+      safeParam(politicas_troca),
+      safeParam(politicas_gerais),
+      safeParam(announcement1),
+      safeParam(announcement2),
+      safeParam(announcementContact),
+      isActive,
+      id
+    ]
+    console.log('Parâmetros do update:', updateParams)
+    await query(`UPDATE stores SET name=?, description=?, cnpj=?, inscricao_estadual=?, whatsapp=?, email=?, endereco=COALESCE(?, endereco), instagram=?, facebook=?, youtube=?, horarios=?, politicas_troca=?, politicas_gerais=?, announcement1=?, announcement2=?, announcementContact=?, isActive=?, updatedAt=NOW() WHERE id=?`, updateParams)
     // update settings
     await query(`UPDATE settings SET plano=? WHERE storeId=?`, [plan, id])
 
@@ -104,6 +128,9 @@ export async function DELETE(request:Request){
     return NextResponse.json({success:true});
   }catch(e){
     console.error('Erro ao deletar loja',e);
+    return NextResponse.json({success:false,message:'Erro interno'},{status:500});
+  }
+} 
     return NextResponse.json({success:false,message:'Erro interno'},{status:500});
   }
 } 

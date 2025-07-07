@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Layout } from "@/components/layout"
 import { HeroBanner } from "@/components/hero-banner"
 import { CategoryGrid } from "@/components/category-grid"
@@ -15,72 +15,8 @@ import Link from "next/link"
 import { mockBanners } from "@/lib/banner-data"
 import Image from "next/image"
 import { storeData } from "@/lib/store-data"
-
-// Mock data para demonstração
-const mockProducts = [
-  {
-    id: "1",
-    name: "Vestido Midi Floral Primavera",
-    price: 159.9,
-    originalPrice: 199.9,
-    image: "/placeholder.svg?height=400&width=300",
-    category: "Vestidos",
-    isNew: true,
-  },
-  {
-    id: "2",
-    name: "Blusa Cropped Manga Longa",
-    price: 89.9,
-    image: "/placeholder.svg?height=400&width=300",
-    category: "Blusas",
-  },
-  {
-    id: "3",
-    name: "Calça Jeans Skinny Destroyed",
-    price: 129.9,
-    originalPrice: 179.9,
-    image: "/placeholder.svg?height=400&width=300",
-    category: "Calças",
-  },
-  {
-    id: "4",
-    name: "Tênis Chunky Branco",
-    price: 199.9,
-    image: "/placeholder.svg?height=400&width=300",
-    category: "Sapatos",
-    isNew: true,
-  },
-  {
-    id: "5",
-    name: "Saia Plissada Mini",
-    price: 79.9,
-    originalPrice: 99.9,
-    image: "/placeholder.svg?height=400&width=300",
-    category: "Saias",
-  },
-  {
-    id: "6",
-    name: "Blazer Oversized Xadrez",
-    price: 189.9,
-    image: "/placeholder.svg?height=400&width=300",
-    category: "Blazers",
-  },
-  {
-    id: "7",
-    name: "Body Básico Manga Longa",
-    price: 59.9,
-    image: "/placeholder.svg?height=400&width=300",
-    category: "Bodies",
-  },
-  {
-    id: "8",
-    name: "Sandália Salto Bloco",
-    price: 149.9,
-    originalPrice: 199.9,
-    image: "/placeholder.svg?height=400&width=300",
-    category: "Sapatos",
-  },
-]
+import { resolveStoreId } from '@/lib/store-id'
+import { useStoreData } from '@/hooks/use-store-data'
 
 const MiddleBanners = () => {
   const middleBanners = mockBanners.filter(
@@ -110,25 +46,38 @@ const MiddleBanners = () => {
   )
 }
 
-const FooterBanner = () => {
-  const footerBanner = mockBanners.find((b) => b.position === "homepage-footer" && b.isActive)
+const WhatsAppSection = () => {
+  const { storeData } = useStoreData()
 
-  if (!footerBanner) return null
+  if (!storeData?.whatsapp) return null
+
+  const whatsappNumber = storeData.whatsapp.replace(/\D/g, '')
 
   return (
-    <section className="py-16 bg-gray-100">
+    <section className="py-16 bg-gradient-to-r from-green-500 to-green-600 text-white">
       <div className="container mx-auto px-4 text-center">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold mb-4">{footerBanner.title}</h2>
-          <p className="text-muted-foreground mb-8">{footerBanner.description}</p>
+          <h2 className="text-3xl font-bold mb-4">Fale Conosco no WhatsApp</h2>
+          <p className="text-green-100 mb-8">
+            Tire suas dúvidas, faça pedidos ou receba atendimento personalizado direto no WhatsApp!
+          </p>
           <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-            <Input
-              type="email"
-              placeholder="Seu melhor e-mail"
-              className="flex-1 px-4 py-3 rounded-lg border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white"
-            />
-            <Button className="bg-pink-500 hover:bg-pink-600 text-white px-6">{footerBanner.buttonText}</Button>
+            <Button 
+              asChild
+              className="bg-white text-green-600 hover:bg-green-50 px-8 py-3 text-lg font-semibold"
+            >
+              <a 
+                href={`https://wa.me/55${whatsappNumber}?text=Olá! Gostaria de conhecer mais sobre os produtos da ${storeData.name}.`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                💬 Conversar no WhatsApp
+              </a>
+            </Button>
           </div>
+          <p className="text-green-100 text-sm mt-4">
+            {storeData.whatsapp}
+          </p>
         </div>
       </div>
     </section>
@@ -139,12 +88,67 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [showToast, setShowToast] = useState(false)
   const [toastProduct, setToastProduct] = useState("")
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const { addItem } = useCart()
+  const [storeId, setStoreId] = useState<number | null>(null)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const resolvedStoreId = await resolveStoreId()
+        setStoreId(resolvedStoreId)
+        
+        // Buscar produtos do banco
+        const response = await fetch(`/api/products?storeId=${resolvedStoreId}`)
+        const data = await response.json()
+        
+        if (data.success) {
+          // Formatar produtos para o frontend
+          const formattedProducts = data.products.map((product: any) => ({
+            id: product.id,
+            name: product.name,
+            slug: product.slug || `produto-${product.id}`,
+            price: parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
+            originalPrice: product.original_price ? parseFloat(product.original_price.replace('R$ ', '').replace(',', '.')) : null,
+            image: product.images[0] || "/placeholder.svg?height=400&width=300",
+            category: product.category,
+            isNew: product.isNew,
+            isPromotion: product.isPromotion,
+            isLaunch: product.isLaunch,
+            isFeatured: product.isFeatured
+          }))
+          
+          setProducts(formattedProducts)
+        }
+      } catch (err) {
+        console.error('Erro ao carregar dados:', err)
+        setStoreId(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchData()
+  }, [])
 
   const handleAddToCart = (product: any) => {
     addItem(product)
     setToastProduct(product.name)
     setShowToast(true)
+  }
+
+  if (loading) {
+    return (
+      <Layout>
+        <main className="container mx-auto px-4 py-16">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+            <p>Carregando produtos...</p>
+          </div>
+        </main>
+      </Layout>
+    )
   }
 
   return (
@@ -191,28 +195,37 @@ export default function Home() {
             </div>
 
             {/* Products Grid */}
-            <div
-              className={`grid gap-6 ${
-                viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-2"
-              }`}
-            >
-              {mockProducts.map((product) => (
-                <Link key={product.id} href={`/produto/${product.id}`}>
-                  <ProductCard product={product} onAddToCart={() => handleAddToCart(product)} />
-                </Link>
-              ))}
-            </div>
+            {products.length > 0 ? (
+              <div
+                className={`grid gap-6 ${
+                  viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-2"
+                }`}
+              >
+                {products.map((product) => (
+                  <Link key={product.id} href={`/produto/${product.slug}`}>
+                    <ProductCard product={product} onAddToCart={() => handleAddToCart(product)} />
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg">Nenhum produto encontrado.</p>
+                <p className="text-gray-400 mt-2">Adicione produtos no dashboard para exibi-los aqui.</p>
+              </div>
+            )}
 
             {/* Load More */}
-            <div className="text-center mt-12">
-              <Button size="lg" variant="outline" className="px-8 bg-transparent">
-                Carregar Mais Produtos
-              </Button>
-            </div>
+            {products.length > 0 && (
+              <div className="text-center mt-12">
+                <Button size="lg" variant="outline" className="px-8 bg-transparent">
+                  Carregar Mais Produtos
+                </Button>
+              </div>
+            )}
           </div>
         </section>
 
-        <FooterBanner />
+        <WhatsAppSection />
       </main>
 
       {/* Footer */}

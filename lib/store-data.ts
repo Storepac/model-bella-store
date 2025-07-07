@@ -1,4 +1,5 @@
 export const storeData = {
+  id: 0,
   // Informações Básicas
   name: "Bella Store",
   description: "Sua loja de moda feminina online com as melhores tendências e preços incríveis.",

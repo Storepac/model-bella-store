@@ -1,43 +1,29 @@
+"use client"
+
 import { useState, useEffect } from 'react'
 
-export interface StoreData {
+interface StoreData {
+  id: number
   name: string
-  description: string
-  cnpj: string
-  ie: string
-  phone: string
-  whatsapp: string
-  email: string
-  website: string
-  address: string
-  complement: string
-  neighborhood: string
-  city: string
-  state: string
-  zipCode: string
-  workingHours: any
-  instagram: string
-  facebook: string
-  tiktok: string
-  youtube: string
-  freeShippingMinValue: number
-  shippingTime: string
-  returnPolicy: string
-  privacyPolicy: string
-  termsOfService: string
-  exchangePolicy: string
-  announcement1: string
-  announcement2: string
-  announcementContact: string
-  colors: {
-    primary: string
-    secondary: string
-    buttons: string
-  }
-  font: string
-  banners: any[]
-  isActive: boolean
-  plano: string
+  logo?: string
+  description?: string
+  cnpj?: string
+  inscricao_estadual?: string
+  whatsapp?: string
+  email?: string
+  endereco?: string
+  instagram?: string
+  facebook?: string
+  youtube?: string
+  tiktok?: string
+  horarios?: string
+  politicas_troca?: string
+  politicas_gerais?: string
+  announcement1?: string
+  announcement2?: string
+  announcementContact?: string
+  exchangePolicy?: string
+  privacyPolicy?: string
 }
 
 export function useStoreData() {
@@ -48,18 +34,25 @@ export function useStoreData() {
   useEffect(() => {
     const fetchStoreData = async () => {
       try {
-        const response = await fetch('/api/store-data', {
-          cache: 'no-store'
-        })
+        setLoading(true)
+        const response = await fetch('/api/store-data')
+        
+        if (!response.ok) {
+          throw new Error('Erro ao carregar dados da loja')
+        }
+        
         const data = await response.json()
         
-        if (data.success) {
-          setStoreData(data.data)
-        } else {
-          setError(data.error || 'Erro ao carregar dados da loja')
+        // Mapear campos do banco para interface
+        const mappedData: StoreData = {
+          ...data,
+          exchangePolicy: data.politicas_troca,
+          privacyPolicy: data.politicas_gerais
         }
+        
+        setStoreData(mappedData)
       } catch (err) {
-        setError('Erro ao carregar dados da loja')
+        setError(err instanceof Error ? err.message : 'Erro desconhecido')
         console.error('Erro ao carregar dados da loja:', err)
       } finally {
         setLoading(false)

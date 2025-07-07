@@ -88,25 +88,25 @@ export default function RelatoriosPage() {
   }, [])
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center md:gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Relatórios</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Relatórios</h1>
           <p className="text-muted-foreground">Análise detalhada do desempenho da sua loja</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="px-3 py-2 border rounded-md text-sm"
+            className="w-full px-3 py-2 border rounded-md text-sm bg-white sm:w-auto"
           >
             <option value="7d">Últimos 7 dias</option>
             <option value="30d">Últimos 30 dias</option>
             <option value="90d">Últimos 90 dias</option>
             <option value="1y">Último ano</option>
           </select>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto py-3 text-base sm:py-2">
             <Download className="h-4 w-4 mr-2" />
             Exportar
           </Button>
@@ -215,66 +215,73 @@ export default function RelatoriosPage() {
 
         {/* Vendas */}
         <TabsContent value="vendas" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Evolução das Vendas</CardTitle>
                 <CardDescription>Vendas mensais em reais</CardDescription>
               </CardHeader>
               <CardContent>
-                <ChartContainer
-                  config={{
-                    vendas: {
-                      label: "Vendas",
-                      color: "hsl(var(--chart-1))",
-                    },
-                  }}
-                  className="h-[300px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={salesData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line
-                        type="monotone"
-                        dataKey="vendas"
-                        stroke="var(--color-vendas)"
-                        strokeWidth={2}
-                        dot={{ fill: "var(--color-vendas)" }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                <div className="w-full overflow-x-auto">
+                  <div className="min-w-[320px] sm:min-w-[400px] md:min-w-[500px] lg:min-w-0">
+                    <ChartContainer
+                      config={{
+                        vendas: {
+                          label: "Vendas",
+                          color: "hsl(var(--chart-1))",
+                        },
+                      }}
+                      className="h-[220px] sm:h-[300px]"
+                    >
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={salesData} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" fontSize={12} />
+                          <YAxis fontSize={12} />
+                          <ChartTooltip content={<ChartTooltipContent />} wrapperStyle={{ fontSize: 12 }} />
+                          <Line
+                            type="monotone"
+                            dataKey="vendas"
+                            stroke="var(--color-vendas)"
+                            strokeWidth={2}
+                            dot={{ fill: "var(--color-vendas)" }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle>Pedidos por Mês</CardTitle>
                 <CardDescription>Quantidade de pedidos mensais</CardDescription>
               </CardHeader>
               <CardContent>
-                <ChartContainer
-                  config={{
-                    pedidos: {
-                      label: "Pedidos",
-                      color: "hsl(var(--chart-2))",
-                    },
-                  }}
-                  className="h-[300px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={salesData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="pedidos" fill="var(--color-pedidos)" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
+                <div className="w-full overflow-x-auto">
+                  <div className="min-w-[320px] sm:min-w-[400px] md:min-w-[500px] lg:min-w-0">
+                    <ChartContainer
+                      config={{
+                        pedidos: {
+                          label: "Pedidos",
+                          color: "hsl(var(--chart-2))",
+                        },
+                      }}
+                      className="h-[220px] sm:h-[300px]"
+                    >
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={salesData} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" fontSize={12} />
+                          <YAxis fontSize={12} />
+                          <ChartTooltip content={<ChartTooltipContent />} wrapperStyle={{ fontSize: 12 }} />
+                          <Bar dataKey="pedidos" fill="var(--color-pedidos)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -370,7 +377,7 @@ export default function RelatoriosPage() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => percent !== undefined ? `${name} ${(percent * 100).toFixed(0)}%` : name}
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"

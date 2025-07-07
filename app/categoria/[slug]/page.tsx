@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { resolveStoreId } from '@/lib/store-id'
 
 interface Category {
   id: string
@@ -51,12 +52,13 @@ export default function CategoryPage() {
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [sortBy, setSortBy] = useState('relevance')
+  const [storeId, setStoreId] = useState<number | null>(null)
 
   // Função para buscar a categoria raiz (nível 0)
-  async function fetchRootCategory(cat: Category): Promise<Category> {
+  async function fetchRootCategory(cat: Category, storeId: number): Promise<Category> {
     let current = cat
     while (current.parentId) {
-      const resp = await fetch(`/api/categories?slug=${current.parentId}`)
+      const resp = await fetch(`/api/categories?slug=${current.parentId}&storeId=${storeId}`)
       if (resp.ok) {
         current = await resp.json()
       } else {
@@ -68,18 +70,21 @@ export default function CategoryPage() {
 
   useEffect(() => {
     const fetchCategory = async () => {
+      setLoading(true)
       try {
-        const response = await fetch(`/api/categories?slug=${slug}`)
+        const resolvedStoreId = await resolveStoreId()
+        setStoreId(resolvedStoreId)
+        const response = await fetch(`/api/categories?slug=${slug}&storeId=${resolvedStoreId}`)
         if (response.ok) {
           const data = await response.json()
           setCategory(data)
 
           // Buscar a categoria principal (nível 0)
-          const root = await fetchRootCategory(data)
+          const root = await fetchRootCategory(data, resolvedStoreId)
           setMainCategory(root)
 
           // Buscar produtos reais da API para a categoria atual
-          const prodResp = await fetch(`/api/products?categoryId=${data.id}`)
+          const prodResp = await fetch(`/api/products?categoryId=${data.id}&storeId=${resolvedStoreId}`)
           if (prodResp.ok) {
             const prodData = await prodResp.json()
             setProducts(prodData.products || [])

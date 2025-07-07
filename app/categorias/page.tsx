@@ -5,9 +5,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import Link from "next/link"
+import { resolveStoreId } from '@/lib/store-id'
+import { useState, useEffect } from 'react'
 
 export default function CategoriasPage() {
   const { categories, loading, error } = useCategories(true)
+  const [storeId, setStoreId] = useState<number | null>(null)
+
+  useEffect(() => {
+    const fetchCategorias = async () => {
+      try {
+        const resolvedStoreId = await resolveStoreId()
+        setStoreId(resolvedStoreId)
+        const res = await fetch(`/api/categories?storeId=${resolvedStoreId}`)
+        // ... existing code ...
+      } catch (err) {
+        // ... existing code ...
+      }
+    }
+    fetchCategorias()
+  }, [])
 
   if (loading) {
     return (

@@ -12,10 +12,31 @@ const pool = mysql.createPool({
   queueLimit: 0,
 })
 
+async function resolveStoreIdByHost(host: string): Promise<number | null> {
+  const [rows] = await pool.query(
+    'SELECT id FROM stores WHERE domain = ? OR subdomain = ? LIMIT 1',
+    [host, host]
+  )
+  if ((rows as any[]).length === 0) return null
+  return (rows as any[])[0].id
+}
+
 export async function GET(request: NextRequest) {
   try {
-    // Por enquanto usar storeId=1 para teste (depois pegar do JWT)
-    const storeId = 1;
+    const { searchParams } = new URL(request.url)
+    let storeId: number | null = null
+    const host = searchParams.get('host')
+    const storeIdParam = searchParams.get('storeId')
+    if (storeIdParam) {
+      storeId = Number(storeIdParam)
+    } else if (host) {
+      storeId = await resolveStoreIdByHost(host)
+    } else {
+      storeId = 1 // fallback para testes
+    }
+    if (!storeId) {
+      return NextResponse.json({ success: false, error: 'Loja não encontrada para este domínio' }, { status: 404 })
+    }
     
     // Buscar dados da loja
     const [storeResult] = await pool.query(`
@@ -32,9 +53,13 @@ export async function GET(request: NextRequest) {
         s.instagram,
         s.facebook,
         s.youtube,
+        s.tiktok,
         s.horarios,
         s.politicas_troca,
         s.politicas_gerais,
+        s.announcement1,
+        s.announcement2,
+        s.announcementContact,
         s.isActive,
         st.plano,
         st.moeda,
@@ -68,6 +93,7 @@ export async function GET(request: NextRequest) {
     
     // Formatar dados para o frontend
     const storeData = {
+      id: store.id,
       // Informações Básicas
       name: store.name || "Bella Store",
       description: store.description || "Sua loja online com as melhores tendências e preços incríveis.",
@@ -88,21 +114,36 @@ export async function GET(request: NextRequest) {
       state: "",
       zipCode: "",
       
-      // Horários (JSON parse se existir)
-      workingHours: store.horarios ? JSON.parse(store.horarios) : {
-        monday: { open: "09:00", close: "18:00", closed: false },
-        tuesday: { open: "09:00", close: "18:00", closed: false },
-        wednesday: { open: "09:00", close: "18:00", closed: false },
-        thursday: { open: "09:00", close: "18:00", closed: false },
-        friday: { open: "09:00", close: "18:00", closed: false },
-        saturday: { open: "09:00", close: "14:00", closed: false },
-        sunday: { open: "09:00", close: "12:00", closed: true },
-      },
+      // Horários (JSON parse se existir com tratamento de erro)
+      workingHours: (() => {
+        try {
+          return store.horarios ? JSON.parse(store.horarios) : {
+            monday: { open: "09:00", close: "18:00", closed: false },
+            tuesday: { open: "09:00", close: "18:00", closed: false },
+            wednesday: { open: "09:00", close: "18:00", closed: false },
+            thursday: { open: "09:00", close: "18:00", closed: false },
+            friday: { open: "09:00", close: "18:00", closed: false },
+            saturday: { open: "09:00", close: "14:00", closed: false },
+            sunday: { open: "09:00", close: "12:00", closed: true },
+          }
+        } catch (error) {
+          console.error('Erro ao fazer parse dos horários:', error, 'Valor:', store.horarios)
+          return {
+            monday: { open: "09:00", close: "18:00", closed: false },
+            tuesday: { open: "09:00", close: "18:00", closed: false },
+            wednesday: { open: "09:00", close: "18:00", closed: false },
+            thursday: { open: "09:00", close: "18:00", closed: false },
+            friday: { open: "09:00", close: "18:00", closed: false },
+            saturday: { open: "09:00", close: "14:00", closed: false },
+            sunday: { open: "09:00", close: "12:00", closed: true },
+          }
+        }
+      })(),
       
       // Redes Sociais
       instagram: store.instagram || "",
       facebook: store.facebook || "",
-      tiktok: "",
+      tiktok: store.tiktok || "",
       youtube: store.youtube || "",
       
       // Configurações de Entrega
@@ -116,9 +157,9 @@ export async function GET(request: NextRequest) {
       exchangePolicy: store.politicas_troca || "",
       
       // Barra de Anúncios
-      announcement1: "Frete grátis acima de R$ 199",
-      announcement2: "Parcelamos em até 10x sem juros",
-      announcementContact: store.whatsapp ? `Atendimento: ${store.whatsapp}` : "",
+      announcement1: store.announcement1 || "Frete grátis acima de R$ 199",
+      announcement2: store.announcement2 || "Parcelamos em até 10x sem juros",
+      announcementContact: store.announcementContact || (store.whatsapp ? `Atendimento: ${store.whatsapp}` : ""),
       
       // Aparência
       colors: {

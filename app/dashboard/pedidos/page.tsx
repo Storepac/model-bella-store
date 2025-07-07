@@ -70,7 +70,7 @@ export default function OrdersPage() {
       <div className="flex items-center">
         <h1 className="text-lg font-semibold md:text-2xl">Pedidos</h1>
         <div className="ml-auto flex items-center gap-2">
-          <Button size="sm" variant="outline" className="h-8 gap-1 bg-transparent">
+          <Button size="sm" variant="outline" className="w-full sm:w-auto py-3 text-base sm:py-2 h-auto gap-1 bg-transparent">
             <File className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Exportar</span>
           </Button>
@@ -82,8 +82,8 @@ export default function OrdersPage() {
           <CardDescription>Acompanhe e gerencie os pedidos dos seus clientes.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto w-full rounded-lg border border-gray-200 bg-white shadow-sm mb-4">
+            <Table className="min-w-[700px] w-full text-sm">
               <TableHeader>
                 <TableRow>
                   <TableHead>Pedido</TableHead>

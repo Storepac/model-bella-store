@@ -40,8 +40,8 @@ export default function NotificacoesPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-6 p-4 md:p-6">
+      <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center md:gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Notificações e Cobranças</h1>
           <p className="text-muted-foreground">Envie mensagens e boletos para seus clientes.</p>
@@ -98,7 +98,7 @@ export default function NotificacoesPage() {
                   {selectedFile && <span className="text-sm text-muted-foreground">{selectedFile.name}</span>}
                 </div>
               </div>
-              <Button className="w-full sm:w-auto">
+              <Button className="w-full sm:w-auto py-3 text-base sm:py-2">
                 <Send className="mr-2 h-4 w-4" />
                 Enviar para Cliente
               </Button>
@@ -133,7 +133,7 @@ export default function NotificacoesPage() {
                   {selectedFile && <span className="text-sm text-muted-foreground">{selectedFile.name}</span>}
                 </div>
               </div>
-              <Button className="w-full sm:w-auto">
+              <Button className="w-full sm:w-auto py-3 text-base sm:py-2">
                 <Send className="mr-2 h-4 w-4" />
                 Enviar Mensagem
               </Button>
