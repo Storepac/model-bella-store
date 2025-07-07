@@ -224,31 +224,31 @@ export default function RelatoriosPage() {
               <CardContent>
                 <div className="w-full overflow-x-auto">
                   <div className="min-w-[320px] sm:min-w-[400px] md:min-w-[500px] lg:min-w-0">
-                    <ChartContainer
-                      config={{
-                        vendas: {
-                          label: "Vendas",
-                          color: "hsl(var(--chart-1))",
-                        },
-                      }}
+                <ChartContainer
+                  config={{
+                    vendas: {
+                      label: "Vendas",
+                      color: "hsl(var(--chart-1))",
+                    },
+                  }}
                       className="h-[220px] sm:h-[300px]"
-                    >
-                      <ResponsiveContainer width="100%" height="100%">
+                >
+                  <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={salesData} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="month" fontSize={12} />
                           <YAxis fontSize={12} />
                           <ChartTooltip content={<ChartTooltipContent />} wrapperStyle={{ fontSize: 12 }} />
-                          <Line
-                            type="monotone"
-                            dataKey="vendas"
-                            stroke="var(--color-vendas)"
-                            strokeWidth={2}
-                            dot={{ fill: "var(--color-vendas)" }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
+                      <Line
+                        type="monotone"
+                        dataKey="vendas"
+                        stroke="var(--color-vendas)"
+                        strokeWidth={2}
+                        dot={{ fill: "var(--color-vendas)" }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
                   </div>
                 </div>
               </CardContent>
@@ -261,25 +261,25 @@ export default function RelatoriosPage() {
               <CardContent>
                 <div className="w-full overflow-x-auto">
                   <div className="min-w-[320px] sm:min-w-[400px] md:min-w-[500px] lg:min-w-0">
-                    <ChartContainer
-                      config={{
-                        pedidos: {
-                          label: "Pedidos",
-                          color: "hsl(var(--chart-2))",
-                        },
-                      }}
+                <ChartContainer
+                  config={{
+                    pedidos: {
+                      label: "Pedidos",
+                      color: "hsl(var(--chart-2))",
+                    },
+                  }}
                       className="h-[220px] sm:h-[300px]"
-                    >
-                      <ResponsiveContainer width="100%" height="100%">
+                >
+                  <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={salesData} margin={{ left: 0, right: 0, top: 10, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="month" fontSize={12} />
                           <YAxis fontSize={12} />
                           <ChartTooltip content={<ChartTooltipContent />} wrapperStyle={{ fontSize: 12 }} />
-                          <Bar dataKey="pedidos" fill="var(--color-pedidos)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
+                      <Bar dataKey="pedidos" fill="var(--color-pedidos)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
                   </div>
                 </div>
               </CardContent>
