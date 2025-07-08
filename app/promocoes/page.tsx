@@ -49,7 +49,7 @@ export default function PromocoesPage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {produtos.map(produto => (
-                <ProductCard key={produto.id} produto={produto} />
+                <ProductCard key={produto.id} product={produto} onAddToCart={() => {}} />
               ))}
             </div>
           )}
