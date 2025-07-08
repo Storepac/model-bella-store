@@ -184,3 +184,6 @@ Gostaria de comprar este produto!`
     </div>
   )
 }
+
+// Export default para compatibilidade
+export default CategoryProductCard

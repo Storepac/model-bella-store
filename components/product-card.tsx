@@ -127,3 +127,6 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
     </div>
   )
 }
+
+// Export default para compatibilidade
+export default ProductCard
