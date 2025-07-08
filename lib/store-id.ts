@@ -29,5 +29,5 @@ export async function resolveStoreId(): Promise<number> {
   cachedHost = host
   
   console.log(`[STORE-ID] Resolvido para o host ${host}: storeId ${cachedStoreId}`);
-  return cachedStoreId
+  return cachedStoreId!
 } 
