@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import ProductCard from '@/components/product-card'
+import { ProductCard } from '@/components/product-card'
 import { getUserStoreId } from '@/lib/store-data'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { resolveStoreId } from '@/lib/store-id'
@@ -49,7 +49,7 @@ export default function LancamentosPage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {produtos.map(produto => (
-                <ProductCard key={produto.id} produto={produto} />
+                <ProductCard key={produto.id} product={produto} onAddToCart={() => {}} />
               ))}
             </div>
           )}

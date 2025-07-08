@@ -204,10 +204,8 @@ export default function Home() {
                   viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-2"
                 }`}
               >
-                {products.map((product) => (
-                  <Link key={product.id} href={`/produto/${product.slug}`}>
-                    <ProductCard product={product} onAddToCart={() => handleAddToCart(product)} />
-                  </Link>
+                {products.map(product => (
+                  <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
                 ))}
               </div>
             ) : (
