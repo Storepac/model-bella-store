@@ -124,12 +124,4 @@ export async function DELETE(request: NextRequest) {
   } catch (error: any) {
     return NextResponse.json({ error: 'Erro ao deletar notificação', details: error.message }, { status: 500 })
   }
-    const [result] = await pool.query(
-      'INSERT INTO notifications (storeId, clientId, whatsapp, arquivo, mensagem, enviado_em, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [body.storeId || 1, body.clientId || null, body.whatsapp, body.arquivo, body.mensagem, body.enviado_em || new Date(), body.status || null]
-    )
-    return NextResponse.json({ success: true, id: (result as any).insertId }, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json({ error: 'Erro ao criar notificação', details: error.message }, { status: 500 })
-  }
 } 
