@@ -131,6 +131,3 @@ export async function DELETE(request:Request){
     return NextResponse.json({success:false,message:'Erro interno'},{status:500});
   }
 } 
-    return NextResponse.json({success:false,message:'Erro interno'},{status:500});
-  }
-} 
