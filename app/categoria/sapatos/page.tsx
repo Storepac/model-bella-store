@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Layout } from "@/components/layout"
-import { CategoryProductCard } from "@/components/category-product-card"
+import CategoryProductCard from "@/components/category-product-card"
 import { CartToast } from "@/components/cart-toast"
 import { Button } from "@/components/ui/button"
 import { Filter, Grid, List } from "lucide-react"
