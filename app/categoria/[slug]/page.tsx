@@ -74,6 +74,7 @@ export default function CategoryPage() {
       try {
         const resolvedStoreId = await resolveStoreId()
         setStoreId(resolvedStoreId)
+        
         const response = await fetch(`/api/categories?slug=${slug}&storeId=${resolvedStoreId}`)
         if (response.ok) {
           const data = await response.json()

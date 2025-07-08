@@ -35,6 +35,7 @@ export default function ProductPage() {
       try {
         const resolvedStoreId = await resolveStoreId()
         setStoreId(resolvedStoreId)
+        
         const response = await fetch(`/api/products/${params.slug}?storeId=${resolvedStoreId}`, {
           cache: 'no-store'
         })
@@ -42,7 +43,6 @@ export default function ProductPage() {
         
         if (data.success) {
           setProduct(data.product)
-          // Selecionar primeira variante se houver
           if (data.product.variants && data.product.variants.length > 0) {
             setSelectedVariant(data.product.variants[0])
           }

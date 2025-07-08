@@ -290,11 +290,11 @@ export default function NovoProdutoPage() {
     <div className="p-4 sm:p-6 space-y-6">
       {/* Header responsivo */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex-1">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex-1">
             <div className="flex flex-col gap-1 mb-4">
               <h1 className="text-xl sm:text-2xl font-bold leading-tight">{produto.name || 'Novo Produto'}</h1>
               {produto.sku && (
@@ -318,8 +318,8 @@ export default function NovoProdutoPage() {
               </>
             ) : (
               <>
-                <Save className="h-4 w-4 mr-2" />
-                Salvar Produto
+            <Save className="h-4 w-4 mr-2" />
+            Salvar Produto
               </>
             )}
           </Button>
@@ -342,21 +342,21 @@ export default function NovoProdutoPage() {
               <Label htmlFor="name">Nome do Produto</Label>
               <Input id="name" className="w-full" value={produto.name} onChange={(e) => setProduto({ ...produto, name: e.target.value })} />
             </div>
-            <div>
+                  <div>
               <Label htmlFor="sku">SKU</Label>
               <Input id="sku" className="w-full" value={produto.sku} onChange={(e) => setProduto({ ...produto, sku: e.target.value })} />
-            </div>
-            <div>
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                value={produto.description}
-                onChange={(e) => setProduto({ ...produto, description: e.target.value })}
-                placeholder="Descreva o produto, materiais, características..."
-                rows={4}
-              />
-            </div>
-            <div>
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Descrição</Label>
+                    <Textarea
+                      id="description"
+                      value={produto.description}
+                      onChange={(e) => setProduto({ ...produto, description: e.target.value })}
+                      placeholder="Descreva o produto, materiais, características..."
+                      rows={4}
+                    />
+                  </div>
+                  <div>
               <Label htmlFor="brand">Marca</Label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <select
@@ -371,7 +371,7 @@ export default function NovoProdutoPage() {
                   ))}
                 </select>
                 <div className="flex gap-2">
-                  <Input
+                    <Input
                     value={novaMarca}
                     onChange={e => setNovaMarca(e.target.value)}
                     placeholder="Nova marca"
@@ -384,52 +384,52 @@ export default function NovoProdutoPage() {
                 </div>
               </div>
             </div>
-          </div>
+                  </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="price">Preço de Venda *</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                value={produto.price}
+                    <div>
+                      <Label htmlFor="price">Preço de Venda *</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        step="0.01"
+                        value={produto.price}
                 onChange={(e) => handlePriceChange('price', e.target.value)}
-                placeholder="159.90"
-              />
-            </div>
+                        placeholder="159.90"
+                      />
+                    </div>
 
-            <div>
-              <Label htmlFor="originalPrice">Preço Original (opcional)</Label>
-              <Input
-                id="originalPrice"
-                type="number"
-                step="0.01"
-                value={produto.originalPrice}
+                    <div>
+                      <Label htmlFor="originalPrice">Preço Original (opcional)</Label>
+                      <Input
+                        id="originalPrice"
+                        type="number"
+                        step="0.01"
+                        value={produto.originalPrice}
                 onChange={(e) => handlePriceChange('originalPrice', e.target.value)}
-                placeholder="199.90"
-              />
-            </div>
-          </div>
+                        placeholder="199.90"
+                      />
+                    </div>
+                  </div>
 
-          {produto.originalPrice && produto.price && (
-            <div className="text-sm text-muted-foreground">
-              Desconto:{" "}
-              {Math.round(
-                ((Number.parseFloat(produto.originalPrice) - Number.parseFloat(produto.price)) /
-                  Number.parseFloat(produto.originalPrice)) *
-                  100,
-              )}
-              %
-            </div>
-          )}
+                  {produto.originalPrice && produto.price && (
+                    <div className="text-sm text-muted-foreground">
+                      Desconto:{" "}
+                      {Math.round(
+                        ((Number.parseFloat(produto.originalPrice) - Number.parseFloat(produto.price)) /
+                          Number.parseFloat(produto.originalPrice)) *
+                          100,
+                      )}
+                      %
+                    </div>
+                  )}
 
-          <Card>
-            <CardHeader>
+              <Card>
+                <CardHeader>
               <CardTitle>Categorias</CardTitle>
               <CardDescription>Selecione as categorias do produto</CardDescription>
-            </CardHeader>
-            <CardContent>
+                </CardHeader>
+                <CardContent>
               <CategorySelector
                 storeId={getUserStoreId()}
                 selectedCategories={produto.categories}
@@ -444,8 +444,8 @@ export default function NovoProdutoPage() {
                   }
                 }}
               />
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
           {/* Badges do Produto */}
           <ProductBadges
@@ -457,11 +457,11 @@ export default function NovoProdutoPage() {
             onPromotionChange={(value) => setProduto({ ...produto, isPromotion: value })}
           />
 
-          <Card>
-            <CardHeader>
+              <Card>
+                <CardHeader>
               <CardTitle>Status do Produto</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+                </CardHeader>
+                <CardContent className="space-y-4">
               <div className="flex flex-col gap-3 mt-6">
                 <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border">
                   <span className="text-sm">Disponível em todos os canais</span>
@@ -470,18 +470,18 @@ export default function NovoProdutoPage() {
                 <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border">
                   <span className="text-sm flex items-center gap-1">Exibir selo destaque no produto <span title="Exibe um selo de destaque no card do produto."><i>i</i></span></span>
                   <Switch checked={produto.isNew} onCheckedChange={v => setProduto({ ...produto, isNew: v })} className="scale-125" />
-                </div>
+                    </div>
                 <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border">
                   <span className="text-sm flex items-center gap-1">Exibir selo lançamento no produto <span title="Exibe um selo de lançamento no card do produto."><i>i</i></span></span>
                   <Switch checked={produto.isLaunch} onCheckedChange={v => setProduto({ ...produto, isLaunch: v })} className="scale-125" />
-                </div>
+                  </div>
                 <div className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border">
                   <span className="text-sm flex items-center gap-1">Exibir selo adicional no produto <span title="Exibe um selo adicional personalizado."><i>i</i></span></span>
                   <Switch checked={produto.isPromotion} onCheckedChange={v => setProduto({ ...produto, isPromotion: v })} className="scale-125" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
         </TabsContent>
 
         {/* Mídia */}
@@ -504,9 +504,9 @@ export default function NovoProdutoPage() {
                       <Image src={image || '/placeholder.svg'} alt={`Produto ${idx + 1}`} fill className="object-cover" />
                       <Button size="icon" variant="ghost" className="absolute top-1 right-1 bg-white/80" onClick={() => removeImage(idx)}>
                         <X className="h-4 w-4 text-gray-500" />
-                      </Button>
-                    </div>
-                  ))}
+                          </Button>
+                        </div>
+                      ))}
                   {produto.images.length > 4 && (
                     <div className="w-20 h-20 rounded-lg bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-lg">
                       +{produto.images.length - 4}
@@ -530,17 +530,17 @@ export default function NovoProdutoPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="video">URL do Vídeo</Label>
-                    <Input
-                      id="video"
-                      value={produto.video}
-                      onChange={(e) => setProduto({ ...produto, video: e.target.value })}
-                      placeholder="https://youtube.com/watch?v=..."
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Suporte para YouTube, Vimeo ou link direto para MP4
-                    </p>
+                <div>
+                  <Label htmlFor="video">URL do Vídeo</Label>
+                  <Input
+                    id="video"
+                    value={produto.video}
+                    onChange={(e) => setProduto({ ...produto, video: e.target.value })}
+                    placeholder="https://youtube.com/watch?v=..."
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Suporte para YouTube, Vimeo ou link direto para MP4
+                  </p>
                   </div>
                   
                   {produto.video && (
@@ -574,8 +574,8 @@ export default function NovoProdutoPage() {
             <div className="flex justify-end mb-2">
               <Button size="sm" variant="outline" onClick={() => setVariantUpdate(v => v + 1)}>
                 Atualizar Variantes
-              </Button>
-            </div>
+                    </Button>
+                </div>
             {/* Variantes do Produto */}
             <Card>
               <CardHeader>

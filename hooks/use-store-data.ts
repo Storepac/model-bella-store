@@ -2,6 +2,19 @@
 
 import { useState, useEffect } from 'react'
 
+interface AppearanceSettings {
+  primaryColor?: string
+  secondaryColor?: string
+  accentColor?: string
+  backgroundColor?: string
+  textColor?: string
+  headerBackgroundColor?: string
+  buttonColor?: string
+  topBarColor?: string
+  topBarTextColor?: string
+  [key: string]: any
+}
+
 interface StoreData {
   id: number
   name: string
@@ -24,6 +37,7 @@ interface StoreData {
   announcementContact?: string
   exchangePolicy?: string
   privacyPolicy?: string
+  appearance?: AppearanceSettings
 }
 
 export function useStoreData() {
@@ -47,7 +61,8 @@ export function useStoreData() {
         const mappedData: StoreData = {
           ...data,
           exchangePolicy: data.politicas_troca,
-          privacyPolicy: data.politicas_gerais
+          privacyPolicy: data.politicas_gerais,
+          appearance: data.appearance_settings ? JSON.parse(data.appearance_settings) : undefined,
         }
         
         setStoreData(mappedData)

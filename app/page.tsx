@@ -12,31 +12,34 @@ import { Button } from "@/components/ui/button"
 import { Filter, Grid, List } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 import Link from "next/link"
-import { mockBanners } from "@/lib/banner-data"
 import Image from "next/image"
 import { storeData } from "@/lib/store-data"
 import { resolveStoreId } from '@/lib/store-id'
 import { useStoreData } from '@/hooks/use-store-data'
 
 const MiddleBanners = () => {
-  const middleBanners = mockBanners.filter(
-    (b) => (b.position === "homepage-middle-1" || b.position === "homepage-middle-2") && b.isActive,
-  )
+  const { storeData } = useStoreData()
+  const [banners, setBanners] = useState<any[]>([])
 
-  if (middleBanners.length === 0) return null
+  useEffect(() => {
+    const fetchBanners = async () => {
+      if (!storeData) return
+      const res = await fetch(`/api/banners?storeId=${storeData.id}`)
+      const data = await res.json()
+      setBanners((data.banners || []).filter((b:any)=> b.isActive && (b.position==='homepage-middle-1'||b.position==='homepage-middle-2')))
+    }
+    fetchBanners()
+  }, [storeData])
+
+  if (banners.length===0) return null
 
   return (
     <div className="container mx-auto px-4 my-12">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {middleBanners.map((banner) => (
+        {banners.map((banner:any)=>(
           <Link href={banner.link} key={banner.id}>
             <div className="group relative aspect-[16/9] w-full overflow-hidden rounded-2xl">
-              <Image
-                src={banner.image || "/placeholder.svg"}
-                alt={banner.title}
-                fill
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-              />
+              <Image src={banner.image||'/placeholder.svg'} alt={banner.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
               <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
             </div>
           </Link>

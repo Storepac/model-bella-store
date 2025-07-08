@@ -25,73 +25,53 @@ export function Header() {
   }, [])
 
   const handleSettingsClick = () => {
-    if (isLoggedIn) {
-      window.location.href = '/dashboard'
-    } else {
-      window.location.href = '/login'
+    window.location.href = isLoggedIn ? '/dashboard' : '/login'
+  }
+
+  const announcementText = !loading && storeData
+    ? [storeData.announcement1, storeData.announcement2, storeData.announcementContact].filter(Boolean).join(" • ")
+    : "Carregando..."
+
+  const renderTopBar = () => {
+    if (loading) {
+      return (
+        <div className="bg-gray-900 text-white text-sm py-2 text-center">
+          <div className="h-4 bg-gray-700 rounded w-1/3 mx-auto animate-pulse"></div>
+        </div>
+      );
     }
-  }
+    if (!announcementText || announcementText === " •  • ") return null;
 
-  const announcementText = storeData ? [storeData.announcement1, storeData.announcement2, storeData.announcementContact]
-    .filter(Boolean)
-    .join(" • ") : "Carregando..."
-
-  if (loading) {
     return (
-      <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
-        <div className="bg-gray-900 text-white text-sm py-2">
-          <div className="container mx-auto px-4">
-            <div className="text-center">Carregando...</div>
-          </div>
-        </div>
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex-1 md:flex-none">
-              <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-      </header>
-    )
-  }
-
-  return (
-    <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
-      {/* Top bar with marquee */}
       <div className="bg-gray-900 text-white text-sm py-2 overflow-x-hidden">
         <div className="flex whitespace-nowrap">
           <div className="marquee flex-shrink-0">
-            <span className="mx-4">{announcementText}</span>
-            <span className="mx-4">{announcementText}</span>
-            <span className="mx-4">{announcementText}</span>
-            <span className="mx-4">{announcementText}</span>
+            {[...Array(4)].map((_, i) => (
+              <span key={i} className="mx-4">{announcementText}</span>
+            ))}
           </div>
         </div>
       </div>
-
+    );
+  };
+  
+  return (
+    <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
+      {renderTopBar()}
       <div className="container mx-auto px-4">
-        {/* Main header */}
         <div className="flex items-center justify-between py-4">
-          {/* Mobile menu button */}
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </Button>
 
-          {/* Logo */}
           <div className="flex-1 md:flex-none">
             <Link href="/">
               <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent cursor-pointer">
-                {storeData?.name || "Bella Store"}
+                {loading ? <span className="h-8 w-32 bg-gray-200 rounded animate-pulse inline-block"></span> : (storeData?.name || "Bella Store")}
               </h1>
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8 flex-1 justify-center">
             <Link href="/" className="text-sm font-medium hover:text-pink-500 transition-colors">
               Home
@@ -101,7 +81,6 @@ export function Header() {
             <MegaMenu categorySlug="infantil" label="Infantil" />
           </nav>
 
-          {/* Actions */}
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="hidden md:flex">
               <Search className="h-5 w-5" />
@@ -113,7 +92,7 @@ export function Header() {
               onClick={handleSettingsClick}
               title={isLoggedIn ? "Ir para Dashboard" : "Fazer Login"}
             >
-                <Settings className="h-5 w-5" />
+              <Settings className="h-5 w-5" />
             </Button>
             <Button variant="ghost" size="icon" className="relative" onClick={toggleCart}>
               <ShoppingBag className="h-5 w-5" />
@@ -126,7 +105,6 @@ export function Header() {
           </div>
         </div>
 
-        {/* Search bar - Mobile/Desktop */}
         <div className="pb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -137,8 +115,6 @@ export function Header() {
           </div>
         </div>
       </div>
-
-      {/* Mobile Navigation */}
       {isMenuOpen && (
         <div className="md:hidden border-t bg-white">
           <nav className="container mx-auto px-4 py-4">

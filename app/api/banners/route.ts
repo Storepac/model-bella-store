@@ -124,12 +124,4 @@ export async function DELETE(request: NextRequest) {
   } catch (error: any) {
     return NextResponse.json({ error: 'Erro ao deletar banner', details: error.message }, { status: 500 })
   }
-    const [result] = await pool.query(
-      'INSERT INTO banners (title, description, image, link, buttonText, position, isActive, categoryId, storeId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [body.title, body.description, body.image, body.link, body.buttonText, body.position, body.isActive !== undefined ? body.isActive : true, body.categoryId || null, body.storeId || 1]
-    )
-    return NextResponse.json({ success: true, id: (result as any).insertId }, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json({ error: 'Erro ao criar banner', details: error.message }, { status: 500 })
-  }
 } 
