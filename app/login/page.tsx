@@ -44,19 +44,28 @@ export default function LoginPage() {
         body: JSON.stringify(payload),
       })
       const data = await response.json()
+      console.log('🔍 Resposta do login:', data)
+      
       if (data.success) {
+        console.log('✅ Login bem-sucedido')
+        console.log('👤 Tipo de usuário:', data.data.user.tipo)
+        
         localStorage.setItem("token", data.data.token)
         localStorage.setItem("user", JSON.stringify(data.data.user))
         if (loginType === "lojista") {
           localStorage.setItem("storeCode", formData.storeCode)
         }
         localStorage.setItem("isLoggedIn", "true")
+        
         if (data.data.user.tipo === "admin_master") {
+          console.log('🔄 Redirecionando para /admin')
           router.push("/admin")
         } else {
+          console.log('🔄 Redirecionando para /dashboard')
           router.push("/dashboard")
         }
       } else {
+        console.log('❌ Login falhou:', data.message)
         setError(data.message || "Credenciais incorretas")
       }
     } catch (err) {
