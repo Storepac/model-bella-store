@@ -8,7 +8,11 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   try {
     // Garantir que endpoint comece com '/'
     const normalized = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const url = `${API_BASE_URL}${normalized}`;
+    
+    // Se o endpoint já começa com /api, usar diretamente
+    const url = normalized.startsWith('/api/') 
+      ? `${BACKEND_URL}${normalized}`
+      : `${API_BASE_URL}${normalized}`;
     
     console.log(`🌐 Fazendo requisição para: ${url}`);
     console.log(`📋 Método: ${options.method || 'GET'}`);
