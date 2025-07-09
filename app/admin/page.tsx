@@ -49,43 +49,43 @@ export default function AdminOverview() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Painel Administrativo</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <Card>
+        <CardHeader>
             <CardTitle>Lojas</CardTitle>
-          </CardHeader>
-          <CardContent>
+        </CardHeader>
+        <CardContent>
             <div className="text-2xl font-bold">{data.totalStores || 0}</div>
             <p className="text-sm text-muted-foreground">Total de lojas cadastradas</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
             <CardTitle>Usuários</CardTitle>
-          </CardHeader>
-          <CardContent>
+        </CardHeader>
+        <CardContent>
             <div className="text-2xl font-bold">{data.totalUsers || 0}</div>
             <p className="text-sm text-muted-foreground">Total de usuários</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
             <CardTitle>Produtos</CardTitle>
-          </CardHeader>
-          <CardContent>
+        </CardHeader>
+        <CardContent>
             <div className="text-2xl font-bold">{data.totalProducts || 0}</div>
             <p className="text-sm text-muted-foreground">Total de produtos</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
             <CardTitle>Pedidos</CardTitle>
-          </CardHeader>
-          <CardContent>
+        </CardHeader>
+        <CardContent>
             <div className="text-2xl font-bold">{data.totalOrders || 0}</div>
             <p className="text-sm text-muted-foreground">Total de pedidos</p>
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
       </div>
     </div>
   )
