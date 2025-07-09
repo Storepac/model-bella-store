@@ -51,7 +51,7 @@ export default function LoginPage() {
           localStorage.setItem("storeCode", formData.storeCode)
         }
         localStorage.setItem("isLoggedIn", "true")
-        if (data.data.user.email === "admin@bella.com") {
+        if (data.data.user.tipo === "admin_master") {
           router.push("/admin")
         } else {
           router.push("/dashboard")
@@ -188,7 +188,7 @@ export default function LoginPage() {
                     <strong>Código:</strong> loja001
                   </p>
                   <p>
-                    <strong>E-mail:</strong> admin@bella.com
+                    <strong>E-mail:</strong> admin@admin
                   </p>
                   <p>
                     <strong>Senha:</strong> 123

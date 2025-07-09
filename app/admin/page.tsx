@@ -9,9 +9,18 @@ export default function AdminOverview() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch('/api/admin/overview?storeId=1')
+        const token = localStorage.getItem('token')
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/overview`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
         const json = await res.json()
-        setData(json)
+        if (json.success) {
+          setData(json.data)
+        } else {
+          setData(null)
+        }
       } catch {
         setData(null)
       } finally {
@@ -28,38 +37,38 @@ export default function AdminOverview() {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <Card>
         <CardHeader>
+          <CardTitle>Lojas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{data.totalStores}</div>
+          <p className="text-sm text-muted-foreground">Total de lojas cadastradas</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Usuários</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{data.totalUsers}</div>
+          <p className="text-sm text-muted-foreground">Total de usuários</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
           <CardTitle>Produtos</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{data.totalProducts}</div>
-          <p className="text-sm text-muted-foreground">Limite: {data.plan.limits.products}</p>
+          <p className="text-sm text-muted-foreground">Total de produtos</p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Fotos</CardTitle>
+          <CardTitle>Pedidos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{data.totalPhotos}</div>
-          <p className="text-sm text-muted-foreground">Limite: {data.plan.limits.photosPerProduct} por produto</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Vídeos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{data.totalVideos}</div>
-          <p className="text-sm text-muted-foreground">{data.plan.limits.video ? 'Permitido' : 'Não permitido'}</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Plano</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{data.plan.name}</div>
-          <p className="text-sm text-muted-foreground">Loja: loja001</p>
+          <div className="text-2xl font-bold">{data.totalOrders}</div>
+          <p className="text-sm text-muted-foreground">Total de pedidos</p>
         </CardContent>
       </Card>
     </div>
