@@ -6,6 +6,15 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Redireciona chamadas /api/* para o backend definido em NEXT_PUBLIC_BACKEND_URL
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_BACKEND_URL}/:path*`,
+      },
+    ]
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
