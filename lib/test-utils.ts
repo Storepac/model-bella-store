@@ -21,11 +21,58 @@ export const TEST_CONFIG = {
     politicas_gerais: 'Políticas gerais da loja'
   },
   
-  // Usuário de teste
-  TEST_USER: {
-    email: 'admin@teste.com',
-    password: 'admin123'
+  // Usuário de teste - TENTAR DIFERENTES CREDENCIAIS
+  TEST_USERS: [
+    {
+      email: 'admin@teste.com',
+      password: 'admin123'
+    },
+    {
+      email: 'admin@teste.com',
+      password: '123'
+    },
+    {
+      email: 'admin@bellastore.com',
+      password: 'admin123'
+    },
+    {
+      email: 'admin@bellastore.com',
+      password: '123'
+    },
+    {
+      email: 'contato@bellastore.com',
+      password: '123'
+    }
+  ]
+};
+
+// Função para testar login com diferentes credenciais
+export const testLoginWithFallback = async () => {
+  for (const user of TEST_CONFIG.TEST_USERS) {
+    try {
+      console.log(`🔐 Tentando login com: ${user.email}`);
+      
+      const response = await fetch(`${TEST_CONFIG.API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Login realizado com:', user.email);
+        return data.data?.token;
+      } else {
+        const error = await response.text();
+        console.log(`❌ Falha com ${user.email}:`, error);
+      }
+    } catch (error) {
+      console.log(`❌ Erro com ${user.email}:`, error);
+    }
   }
+  
+  console.error('❌ Nenhuma credencial funcionou');
+  return null;
 };
 
 // Função para testar todas as rotas
@@ -128,26 +175,7 @@ export const cleanupTestData = async (token: string) => {
   }
 };
 
-// Função para fazer login de teste
+// Função para fazer login de teste (com fallback)
 export const testLogin = async () => {
-  try {
-    const response = await fetch(`${TEST_CONFIG.API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(TEST_CONFIG.TEST_USER)
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      console.log('✅ Login de teste realizado:', data);
-      return data.data?.token;
-    } else {
-      const error = await response.text();
-      console.error('❌ Erro no login de teste:', error);
-      return null;
-    }
-  } catch (error) {
-    console.error('❌ Erro no login de teste:', error);
-    return null;
-  }
+  return await testLoginWithFallback();
 }; 

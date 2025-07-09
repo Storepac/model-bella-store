@@ -11,12 +11,13 @@ export default function TestPage() {
   const runTests = async () => {
     setLoading(true);
     try {
-      // 1. Fazer login
+      // 1. Fazer login com fallback
+      console.log('🔐 Tentando login com diferentes credenciais...');
       const loginToken = await testLogin();
       setToken(loginToken || '');
 
       if (!loginToken) {
-        setResults({ error: 'Falha no login' });
+        setResults({ error: 'Falha no login - nenhuma credencial funcionou' });
         return;
       }
 
@@ -107,9 +108,9 @@ export default function TestPage() {
             </pre>
           </div>
           <div>
-            <h3 className="font-semibold mb-2">👤 Usuário de Teste</h3>
+            <h3 className="font-semibold mb-2">👤 Credenciais de Teste</h3>
             <pre className="bg-gray-100 p-3 rounded text-xs overflow-auto">
-              {JSON.stringify(TEST_CONFIG.TEST_USER, null, 2)}
+              {JSON.stringify(TEST_CONFIG.TEST_USERS, null, 2)}
             </pre>
           </div>
         </div>
@@ -119,6 +120,7 @@ export default function TestPage() {
       <div className="mt-6 bg-blue-50 p-6 rounded-lg">
         <h2 className="text-xl font-semibold mb-4">📋 Instruções</h2>
         <ol className="list-decimal list-inside space-y-2 text-sm">
+          <li>O sistema tentará fazer login com diferentes credenciais automaticamente</li>
           <li>Clique em "Executar Testes" para testar todas as funcionalidades</li>
           <li>Verifique os resultados na seção "Resultados"</li>
           <li>Use "Limpar Dados de Teste" para remover dados de teste</li>
