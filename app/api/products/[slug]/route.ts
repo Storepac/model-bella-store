@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import mysql from 'mysql2/promise'
+import { apiRequest, testBackendConnection } from '@/lib/database'
 
 const pool = mysql.createPool({
   host: '127.0.0.1',

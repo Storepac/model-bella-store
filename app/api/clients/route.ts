@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import mysql from 'mysql2/promise'
+import { apiRequest, testBackendConnection } from '@/lib/database'
 
 const pool = mysql.createPool({
   host: 'localhost',
@@ -13,8 +13,29 @@ const pool = mysql.createPool({
 
 export async function GET(request: NextRequest) {
   try {
-    // Pegar storeId da query string, default 1
-    const { searchParams } = new URL(request.url)
+    // Testar conexão com o backend
+    const isConnected = await testBackendConnection();
+    
+    if (!isConnected) {
+      console.log('Backend não disponível, retornando dados mock');
+      return NextResponse.json(mockData);
+    }
+
+    // Fazer requisição para o backend
+    const result = await apiRequest('/apiC:\Users\storepac\Downloads\anderson\model-bella-store-1\app\api\clients\route.ts');
+    return NextResponse.json(result);
+  } catch (error: any) {
+    console.error('Error:', error)
+    
+    // Se houver erro de conexão, retornar dados mock
+    if (error.message.includes('fetch') || error.message.includes('network')) {
+      console.log('Erro de conexão detectado, retornando dados mock');
+      return NextResponse.json(mockData);
+    }
+    
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 })
+  }
+} = new URL(request.url)
     const storeIdParam = searchParams.get('storeId')
     const storeId = storeIdParam ? Number(storeIdParam) : 1
     

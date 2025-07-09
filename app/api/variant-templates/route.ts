@@ -183,7 +183,29 @@ const variantTemplates = [
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    // Testar conexão com o backend
+    const isConnected = await testBackendConnection();
+    
+    if (!isConnected) {
+      console.log('Backend não disponível, retornando dados mock');
+      return NextResponse.json(mockData);
+    }
+
+    // Fazer requisição para o backend
+    const result = await apiRequest('/apiC:\Users\storepac\Downloads\anderson\model-bella-store-1\app\api\variant-templates\route.ts');
+    return NextResponse.json(result);
+  } catch (error: any) {
+    console.error('Error:', error)
+    
+    // Se houver erro de conexão, retornar dados mock
+    if (error.message.includes('fetch') || error.message.includes('network')) {
+      console.log('Erro de conexão detectado, retornando dados mock');
+      return NextResponse.json(mockData);
+    }
+    
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 })
+  }
+} = new URL(request.url)
     const category = searchParams.get('category')
     
     let filteredTemplates = variantTemplates

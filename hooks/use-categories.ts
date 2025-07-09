@@ -36,17 +36,28 @@ export function useCategories(activeOnly: boolean = true) {
     const fetchCategories = async () => {
       try {
         setLoading(true)
+        setError(null)
+        
         const response = await fetch(`/api/categories?activeOnly=${activeOnly}`)
         
         if (!response.ok) {
-          throw new Error('Falha ao carregar categorias')
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || `Erro ${response.status}: ${response.statusText}`)
         }
         
         const data = await response.json()
         setCategories(data)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro desconhecido')
+        const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao carregar categorias'
+        setError(errorMessage)
         console.error('Erro ao buscar categorias:', err)
+        
+        // Se for erro de conexão, tentar novamente em 5 segundos
+        if (errorMessage.includes('ECONNREFUSED') || errorMessage.includes('Failed to fetch')) {
+          setTimeout(() => {
+            fetchCategories()
+          }, 5000)
+        }
       } finally {
         setLoading(false)
       }
