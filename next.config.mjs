@@ -8,10 +8,11 @@ const nextConfig = {
   },
   // Redireciona chamadas /api/* para o backend definido em NEXT_PUBLIC_BACKEND_URL
   async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_BACKEND_URL}/:path*`,
+        destination: `${backendUrl}/:path*`,
       },
     ]
   },

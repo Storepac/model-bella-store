@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from 'react'
+import { Layout } from "@/components/layout"
+import { ProductCard } from '@/components/product-card'
 import { useRouter } from 'next/navigation'
-import ProductCard from '@/components/product-card'
-import { getUserStoreId } from '@/lib/store-data'
+import { storeData } from '@/lib/store-data'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { resolveStoreId } from '@/lib/store-id'
 
