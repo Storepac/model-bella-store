@@ -25,7 +25,7 @@ interface CategoryProductCardProps {
   onAddToCart?: () => void
 }
 
-export function CategoryProductCard({ product, onAddToCart }: CategoryProductCardProps) {
+export default function CategoryProductCard({ product, onAddToCart }: CategoryProductCardProps) {
   const [currentImage, setCurrentImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [isLiked, setIsLiked] = useState(false)
@@ -188,5 +188,3 @@ Gostaria de comprar este produto!`
     </div>
   )
 }
-
-export default CategoryProductCard

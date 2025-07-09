@@ -25,7 +25,7 @@ interface ProductCardProps {
   onAddToCart: (product: Product) => void
 }
 
-export function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const [isLiked, setIsLiked] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
 
@@ -127,5 +127,3 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
     </div>
   )
 }
-
-export default ProductCard
