@@ -2,7 +2,7 @@
 
 import { useStoreData } from '@/hooks/use-store-data'
 import { Header } from '@/components/header'
-import { Footer } from '@/app/components/footer'
+import { Footer } from '@/components/footer'
 
 export default function SobrePage() {
   const { storeData, loading } = useStoreData()

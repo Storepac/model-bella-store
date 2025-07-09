@@ -188,3 +188,5 @@ Gostaria de comprar este produto!`
     </div>
   )
 }
+
+export { CategoryProductCard }
