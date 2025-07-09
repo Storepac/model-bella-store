@@ -8,7 +8,13 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
   try {
     // Garantir que endpoint comece com '/'
     const normalized = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const response = await fetch(`${API_BASE_URL}${normalized}`, {
+    const url = `${API_BASE_URL}${normalized}`;
+    
+    console.log(`🌐 Fazendo requisição para: ${url}`);
+    console.log(`📋 Método: ${options.method || 'GET'}`);
+    console.log(`🔑 Headers:`, options.headers);
+    
+    const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -16,15 +22,22 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       ...options,
     });
 
+    console.log(`📊 Status da resposta: ${response.status}`);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Erro na resposta: ${response.status} - ${errorText}`);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     // Alguns endpoints podem retornar vazio (204)
     if (response.status === 204) return null;
-    return await response.json();
+    
+    const data = await response.json();
+    console.log(`✅ Resposta recebida:`, data);
+    return data;
   } catch (error) {
-    console.error('Erro na requisição para o backend:', error);
+    console.error('❌ Erro na requisição para o backend:', error);
     throw error;
   }
 };

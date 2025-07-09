@@ -1,9 +1,25 @@
 import { NextResponse } from 'next/server'
 import { apiRequest } from '@/lib/database'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const response = await apiRequest('/stores', {
+    const { searchParams } = new URL(request.url)
+    const isAdmin = searchParams.get('admin')
+    
+    // Se for admin, usar rota específica
+    if (isAdmin) {
+      const authHeader = request.headers.get('authorization')
+      const response = await apiRequest('/api/stores/admin', {
+        method: 'GET',
+        headers: {
+          'Authorization': authHeader || ''
+        }
+      })
+      return NextResponse.json(response)
+    }
+    
+    // Rota pública
+    const response = await apiRequest('/api/stores', {
       method: 'GET'
     })
     return NextResponse.json(response)
@@ -20,10 +36,12 @@ export async function POST(request: Request) {
     // Obter o token do header Authorization
     const authHeader = request.headers.get('authorization')
     
-    const response = await apiRequest('/admin/stores', {
+    // CORRIGIDO: usar /api/stores para criar loja
+    const response = await apiRequest('/api/stores', {
       method: 'POST',
       headers: {
-        'Authorization': authHeader || ''
+        'Authorization': authHeader || '',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
     })
@@ -47,10 +65,12 @@ export async function PUT(request: Request) {
     // Obter o token do header Authorization
     const authHeader = request.headers.get('authorization')
     
-    const response = await apiRequest(`/stores/${id}`, {
+    // CORRIGIDO: usar /api/stores/:id
+    const response = await apiRequest(`/api/stores/${id}`, {
       method: 'PUT',
       headers: {
-        'Authorization': authHeader || ''
+        'Authorization': authHeader || '',
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(updateData)
     })
@@ -73,7 +93,8 @@ export async function DELETE(request: Request) {
     // Obter o token do header Authorization
     const authHeader = request.headers.get('authorization')
     
-    const response = await apiRequest(`/stores/${id}`, {
+    // CORRIGIDO: usar /api/stores/:id
+    const response = await apiRequest(`/api/stores/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': authHeader || ''
