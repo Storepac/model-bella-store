@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Store, Lock, User, Eye, EyeOff, Shield } from "lucide-react"
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -38,7 +38,7 @@ export default function LoginPage() {
         payload.email = formData.email
       }
 
-      const response = await fetch(`${apiUrl}/api/auth/login`, {
+      const response = await fetch(`${apiUrl}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
