@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Edit, Pause, Play, Plus } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { apiFetch } from '@/lib/api-client'
 
 const PLAN_OPTIONS = [
   { value: 'Start', label: 'Start' },
@@ -57,8 +58,7 @@ export default function AdminClients() {
   const reload = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/stores', { cache: 'no-store' })
-      const json = await res.json()
+      const json = await apiFetch('/stores/admin', { auth: true })
       if (json.success) {
         setStores(json.data || [])
       } else {
@@ -140,9 +140,9 @@ export default function AdminClients() {
 
   const handleToggleActive = async (store: any) => {
     try {
-      const res = await fetch('/api/stores', {
+      const result = await apiFetch(`/stores/${store.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        auth: true,
         body: JSON.stringify({
           id: store.id,
           name: store.name,
@@ -162,11 +162,8 @@ export default function AdminClients() {
           isActive: !store.isActive,
           store_code: store.store_code,
           password: '',
-        }),
-        cache: 'no-store'
-      })
-      
-      const result = await res.json()
+        })
+      });
       if (result.success) {
         toast({
           title: !store.isActive ? 'Loja ativada' : 'Loja pausada',
@@ -202,14 +199,11 @@ export default function AdminClients() {
     setSaving(true)
     try {
       const method = editingStore ? 'PUT' : 'POST'
-      const res = await fetch('/api/stores', {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-        cache: 'no-store'
+      const result = await apiFetch(`/stores${editingStore ? `/${form.id}` : ''}`, {
+        method: method,
+        auth: true,
+        body: JSON.stringify(form)
       })
-      
-      const result = await res.json()
       if (result.success) {
         toast({
           title: editingStore ? 'Loja atualizada' : 'Loja cadastrada',
@@ -248,14 +242,10 @@ export default function AdminClients() {
 
   const handleDelete = async (id: number) => {
     try {
-      const res = await fetch('/api/stores', {
+      const result = await apiFetch(`/stores/${id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-        cache: 'no-store'
+        auth: true
       })
-      
-      const result = await res.json()
       if (result.success) {
         toast({
           title: 'Loja deletada',

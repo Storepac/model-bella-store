@@ -190,7 +190,7 @@ export default function VestidosPage() {
     setPage(1)
     setHasMore(true)
     // Aqui você aplicaria os filtros aos produtos
-    console.log("Filtros aplicados:", filters)
+
   }
 
   const handleClearFilters = () => {
@@ -200,7 +200,6 @@ export default function VestidosPage() {
     setPage(1)
     setHasMore(true)
     // Aqui você limparia os filtros dos produtos
-    console.log("Filtros limpos")
   }
 
   const categoryBanner = mockBanners.find(

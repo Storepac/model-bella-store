@@ -11,29 +11,54 @@ import Link from "next/link"
 interface Product {
   id: string
   name: string
-  description: string
+  description?: string
   price: number
   originalPrice?: number
   images: string[]
   category: string
   isNew?: boolean
   stock?: number
+  rating?: number
+  reviews?: number
+  discount?: number
 }
 
 interface CategoryProductCardProps {
   product: Product
   onAddToCart?: () => void
+  basePath?: string
+  theme?: "pink" | "blue"
 }
 
-export default function CategoryProductCard({ product, onAddToCart }: CategoryProductCardProps) {
+export default function CategoryProductCard({ 
+  product, 
+  onAddToCart, 
+  basePath = "/produto",
+  theme = "pink"
+}: CategoryProductCardProps) {
   const [currentImage, setCurrentImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [isLiked, setIsLiked] = useState(false)
   const { addItem } = useCart()
 
-  const discountPercentage = product.originalPrice
+  const discountPercentage = product.discount || (product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-    : 0
+    : 0)
+
+  const themeClasses = {
+    pink: {
+      primary: "pink",
+      hover: "hover:text-pink-500",
+      badge: "bg-pink-500 hover:bg-pink-600"
+    },
+    blue: {
+      primary: "blue",
+      hover: "hover:text-blue-500",
+      badge: "bg-blue-500 hover:bg-blue-600"
+    }
+  }
+
+  const currentTheme = themeClasses[theme]
 
   const handleAddToCart = () => {
     const cartProduct = {
@@ -66,7 +91,7 @@ Gostaria de comprar este produto!`
     <div className="bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden">
       {/* Image Container */}
       <div className="relative aspect-[4/5] overflow-hidden bg-gray-100 group">
-        <Link href={`/produto/${product.id}`}>
+        <Link href={`${basePath}/${product.id}`}>
           <Image
             src={product.images[currentImage] || "/placeholder.svg"}
             alt={product.name}
@@ -106,7 +131,7 @@ Gostaria de comprar este produto!`
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
-          {product.isNew && <Badge className="bg-pink-500 hover:bg-pink-600 text-white text-xs">Novo</Badge>}
+          {product.isNew && <Badge className={`${currentTheme.badge} text-white text-xs`}>Novo</Badge>}
           {discountPercentage > 0 && (
             <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs">-{discountPercentage}%</Badge>
           )}
@@ -129,13 +154,29 @@ Gostaria de comprar este produto!`
       <div className="p-4 space-y-3">
         {/* Title and Description */}
         <div>
-          <Link href={`/produto/${product.id}`}>
-            <h3 className="font-semibold text-base mb-1 line-clamp-2 hover:text-pink-500 transition-colors cursor-pointer">
+          <Link href={`${basePath}/${product.id}`}>
+            <h3 className={`font-semibold text-base mb-1 line-clamp-2 ${currentTheme.hover} transition-colors cursor-pointer`}>
               {product.name}
             </h3>
           </Link>
-          <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+          {product.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+          )}
         </div>
+
+        {/* Rating */}
+        {product.rating && (
+          <div className="flex items-center gap-1">
+            <div className="flex text-yellow-400">
+              {[...Array(5)].map((_, i) => (
+                <svg key={i} className={`w-4 h-4 ${i < Math.floor(product.rating!) ? 'fill-current' : 'fill-gray-300'}`} viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              ))}
+            </div>
+            <span className="text-sm text-gray-600">({product.reviews || 0})</span>
+          </div>
+        )}
 
         {/* Price */}
         <div className="space-y-1">

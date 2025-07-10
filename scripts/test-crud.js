@@ -1,6 +1,7 @@
 // Script para testar o CRUD completo
-const BACKEND_URL = 'https://backend-e5txym-30bc43-152-53-192-161.traefik.me';
-const API_BASE_URL = `${BACKEND_URL}/api`;
+// Usa variáveis de ambiente ou fallback para local
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || `${BACKEND_URL}/api`;
 
 // Dados de teste
 const TEST_DATA = {

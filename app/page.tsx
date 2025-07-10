@@ -1,293 +1,249 @@
-"use client"
+'use client'
 
-import { Input } from "@/components/ui/input"
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { CheckCircle, Store, Smartphone, BarChart3, Users, ShoppingCart, MessageCircle } from 'lucide-react'
+import Link from 'next/link'
 
-import { useState, useEffect } from "react"
-import { Layout } from "@/components/layout"
-import { HeroBanner } from "@/components/hero-banner"
-import { CategoryGrid } from "@/components/category-grid"
-import { ProductCard } from "@/components/product-card"
-import { CartToast } from "@/components/cart-toast"
-import { Button } from "@/components/ui/button"
-import { Filter, Grid, List } from "lucide-react"
-import { useCart } from "@/lib/cart-context"
-import Link from "next/link"
-import Image from "next/image"
-import { storeData } from "@/lib/store-data"
-import { resolveStoreId } from '@/lib/store-id'
-import { useStoreData } from '@/hooks/use-store-data'
+const features = [
+  {
+    icon: Store,
+    title: 'Loja Online Completa',
+    description: 'Crie sua loja virtual com catálogo de produtos, categorias e sistema de busca'
+  },
+  {
+    icon: Smartphone,
+    title: 'Checkout via WhatsApp',
+    description: 'Vendas diretas pelo WhatsApp com carrinho integrado e finalização simplificada'
+  },
+  {
+    icon: BarChart3,
+    title: 'Dashboard Completo',
+    description: 'Gerencie produtos, pedidos, clientes e acompanhe relatórios de vendas'
+  },
+  {
+    icon: Users,
+    title: 'Gestão de Clientes',
+    description: 'Cadastro de clientes, histórico de pedidos e relacionamento personalizado'
+  },
+  {
+    icon: ShoppingCart,
+    title: 'Carrinho Inteligente',
+    description: 'Carrinho de compras com cálculo automático e envio direto para WhatsApp'
+  },
+  {
+    icon: MessageCircle,
+    title: 'Suporte Integrado',
+    description: 'Suporte técnico e comercial integrado para ajudar no crescimento da sua loja'
+  }
+]
 
-const MiddleBanners = () => {
-  const { storeData } = useStoreData()
-  const [banners, setBanners] = useState<any[]>([])
-
-  useEffect(() => {
-    const fetchBanners = async () => {
-      if (!storeData) return
-      const res = await fetch(`/api/banners?storeId=${storeData.id}`)
-      const data = await res.json()
-      setBanners((data.banners || []).filter((b:any)=> b.isActive && (b.position==='homepage-middle-1'||b.position==='homepage-middle-2')))
-    }
-    fetchBanners()
-  }, [storeData])
-
-  if (banners.length===0) return null
-
-  return (
-    <div className="container mx-auto px-4 my-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {banners.map((banner:any)=>(
-          <Link href={banner.link} key={banner.id}>
-            <div className="group relative aspect-[16/9] w-full overflow-hidden rounded-2xl">
-              <Image src={banner.image||'/placeholder.svg'} alt={banner.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-const WhatsAppSection = () => {
-  const { storeData } = useStoreData()
-
-  if (!storeData?.whatsapp) return null
-
-  const whatsappNumber = storeData.whatsapp.replace(/\D/g, '')
-
-  return (
-    <section className="py-16 bg-gradient-to-r from-green-500 to-green-600 text-white">
-      <div className="container mx-auto px-4 text-center">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold mb-4">Fale Conosco no WhatsApp</h2>
-          <p className="text-green-100 mb-8">
-            Tire suas dúvidas, faça pedidos ou receba atendimento personalizado direto no WhatsApp!
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-            <Button 
-              asChild
-              className="bg-white text-green-600 hover:bg-green-50 px-8 py-3 text-lg font-semibold"
-            >
-              <a 
-                href={`https://wa.me/55${whatsappNumber}?text=Olá! Gostaria de conhecer mais sobre os produtos da ${storeData.name}.`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                💬 Conversar no WhatsApp
-              </a>
-            </Button>
-          </div>
-          <p className="text-green-100 text-sm mt-4">
-            {storeData.whatsapp}
-          </p>
-        </div>
-      </div>
-    </section>
-  )
-}
+const plans = [
+  {
+    name: 'Start',
+    price: 'R$ 29,90',
+    period: '/mês',
+    features: [
+      'Até 500 produtos',
+      'Até 2 fotos por produto',
+      'Suporte básico',
+      'Dashboard completo',
+      'Checkout WhatsApp'
+    ],
+    popular: false
+  },
+  {
+    name: 'Pro',
+    price: 'R$ 59,90',
+    period: '/mês',
+    features: [
+      'Até 1000 produtos',
+      'Até 3 fotos por produto',
+      'Suporte prioritário',
+      'Relatórios avançados',
+      'Integrações extras'
+    ],
+    popular: true
+  },
+  {
+    name: 'Max',
+    price: 'R$ 99,90',
+    period: '/mês',
+    features: [
+      'Produtos ilimitados',
+      'Até 4 fotos por produto',
+      'Suporte VIP',
+      'Relatórios completos',
+      'Todas as integrações'
+    ],
+    popular: false
+  }
+]
 
 export default function Home() {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [showToast, setShowToast] = useState(false)
-  const [toastProduct, setToastProduct] = useState("")
-  const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const { addItem } = useCart()
-  const [storeId, setStoreId] = useState<number | null>(null)
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const resolvedStoreId = await resolveStoreId()
-        setStoreId(resolvedStoreId)
-        
-        // Buscar produtos do banco
-        const response = await fetch(`/api/products?storeId=${resolvedStoreId}`)
-        const data = await response.json()
-        
-        if (data.success) {
-          // Formatar produtos para o frontend
-          const formattedProducts = data.products.map((product: any) => ({
-            id: product.id,
-            name: product.name,
-            slug: product.slug || `produto-${product.id}`,
-            price: parseFloat(product.price.replace('R$ ', '').replace(',', '.')),
-            originalPrice: product.original_price ? parseFloat(product.original_price.replace('R$ ', '').replace(',', '.')) : null,
-            image: product.images[0] || "/placeholder.svg?height=400&width=300",
-            category: product.category,
-            isNew: product.isNew,
-            isPromotion: product.isPromotion,
-            isLaunch: product.isLaunch,
-            isFeatured: product.isFeatured
-          }))
-          
-          setProducts(formattedProducts)
-        }
-      } catch (err) {
-        console.error('Erro ao carregar dados:', err)
-        setStoreId(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-    
-    fetchData()
-  }, [])
-
-  const handleAddToCart = (product: any) => {
-    addItem(product)
-    setToastProduct(product.name)
-    setShowToast(true)
-  }
-
-  if (loading) {
-    return (
-      <Layout>
-        <main className="container mx-auto px-4 py-16">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
-            <p>Carregando produtos...</p>
-          </div>
-        </main>
-      </Layout>
-    )
-  }
-
   return (
-    <Layout>
-      <main>
-        <HeroBanner />
-        <CategoryGrid />
-        <MiddleBanners />
-
-        {/* Products Section */}
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-4">
-            {/* Section Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-              <div>
-                <h2 className="text-3xl font-bold mb-2">Produtos em Destaque</h2>
-                <p className="text-muted-foreground">Descubra nossa seleção especial de produtos</p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filtros
-                </Button>
-                <div className="flex border rounded-lg">
-                  <Button
-                    variant={viewMode === "grid" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("grid")}
-                    className="rounded-r-none"
-                  >
-                    <Grid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === "list" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("list")}
-                    className="rounded-l-none"
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Store className="h-8 w-8 text-blue-600 mr-2" />
+              <span className="text-xl font-bold text-gray-900">Bella Store</span>
             </div>
-
-            {/* Products Grid */}
-            {products.length > 0 ? (
-              <div
-                className={`grid gap-6 ${
-                  viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-2"
-                }`}
-              >
-                {products.map(product => (
-                  <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">Nenhum produto encontrado.</p>
-                <p className="text-gray-400 mt-2">Adicione produtos no dashboard para exibi-los aqui.</p>
-              </div>
-            )}
-
-            {/* Load More */}
-            {products.length > 0 && (
-              <div className="text-center mt-12">
-                <Button size="lg" variant="outline" className="px-8 bg-transparent">
-                  Carregar Mais Produtos
-                </Button>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <WhatsAppSection />
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-                Bella Store
-              </h3>
-              <p className="text-gray-400 text-sm">
-                Sua loja de moda feminina online com as melhores tendências e preços incríveis.
-              </p>
+            <div className="flex items-center space-x-4">
+              <Link href="/demo">
+                <Button variant="ghost">Ver Demo</Button>
+              </Link>
+              <Link href="/acesso">
+                <Button variant="outline">Fazer Login</Button>
+              </Link>
+              <Link href="/cadastro">
+                <Button>Criar Loja</Button>
+              </Link>
             </div>
-            <div>
-              <h4 className="font-semibold mb-4">Atendimento</h4>
-              <div className="space-y-2 text-sm text-gray-400">
-                <p>Segunda a Sexta: 9h às 18h</p>
-                <p>Sábado: 9h às 15h</p>
-                <p>WhatsApp: (11) 99999-9999</p>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Institucional</h4>
-              <div className="space-y-2 text-sm text-gray-400">
-                <a href="#" className="block hover:text-white">
-                  Sobre nós
-                </a>
-                <a href="#" className="block hover:text-white">
-                  Política de privacidade
-                </a>
-                <a href="#" className="block hover:text-white">
-                  Termos de uso
-                </a>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-4">Redes Sociais</h4>
-              <div className="space-y-2 text-sm text-gray-400">
-                <a href="#" className="block hover:text-white">
-                  Instagram
-                </a>
-                <a href="#" className="block hover:text-white">
-                  Facebook
-                </a>
-                <a href="#" className="block hover:text-white">
-                  TikTok
-                </a>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>
-              &copy; {new Date().getFullYear()} {storeData.name}. CNPJ: {storeData.cnpj}. Todos os direitos reservados.
-            </p>
           </div>
         </div>
-      </footer>
+      </header>
 
-      {/* Toast */}
-      <CartToast show={showToast} onClose={() => setShowToast(false)} productName={toastProduct} />
-    </Layout>
+      {/* Hero Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            Crie sua loja online e venda pelo
+            <span className="text-blue-600"> WhatsApp</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            Plataforma completa para criar sua loja virtual com checkout integrado ao WhatsApp. 
+            Sem complicações, sem taxas por venda.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/cadastro">
+              <Button size="lg" className="text-lg px-8 py-4">
+                Começar Agora - Grátis
+              </Button>
+            </Link>
+            <Link href="/demo">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-4">
+                Ver Demonstração
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Tudo que você precisa para vender online
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Ferramentas profissionais para criar, gerenciar e fazer crescer sua loja online
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                <CardHeader className="text-center pb-4">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4">
+                    <feature.icon className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <CardDescription className="text-gray-600">
+                    {feature.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Planos para todos os tamanhos
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-4">
+              Escolha o plano ideal para sua loja. Sem taxas por venda, sem surpresas.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+              <p className="text-sm text-blue-800">
+                <strong>Taxa única de implementação:</strong> R$ 997,00
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                Valor cobrado apenas uma vez para configuração completa da sua loja
+              </p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {plans.map((plan, index) => (
+              <Card key={index} className={`relative ${plan.popular ? 'border-2 border-blue-500 shadow-xl' : 'border shadow-lg'}`}>
+                {plan.popular && (
+                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-500">
+                    Mais Popular
+                  </Badge>
+                )}
+                <CardHeader className="text-center pb-4">
+                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
+                    <span className="text-gray-600">{plan.period}</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-3">
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center">
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href="/cadastro">
+                    <Button className={`w-full ${plan.popular ? 'bg-blue-600 hover:bg-blue-700' : ''}`}>
+                      Escolher Plano
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-blue-600">
+        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Pronto para começar?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Crie sua loja online em minutos e comece a vender hoje mesmo
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/cadastro">
+              <Button size="lg" variant="secondary" className="text-lg px-8 py-4">
+                Criar Minha Loja Grátis
+              </Button>
+            </Link>
+            <Link href="/demo">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-4 border-white text-white hover:bg-white hover:text-blue-600">
+                Ver Como Funciona
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
   )
 }

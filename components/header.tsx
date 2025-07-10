@@ -10,12 +10,18 @@ import Link from "next/link"
 import { useStoreData } from "@/hooks/use-store-data"
 import { CategoryMenu, CategoryMenuMobile } from "@/components/category-menu"
 import { MegaMenu } from "@/components/mega-menu"
+import { StoreLogo } from "@/components/store-logo"
+import { usePathname } from "next/navigation"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const { getItemCount, toggleCart } = useCart()
   const { storeData, loading } = useStoreData()
+  const pathname = usePathname()
+
+  // Detectar se está na demo
+  const isDemo = pathname?.startsWith('/demo')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -65,20 +71,34 @@ export function Header() {
           </Button>
 
           <div className="flex-1 md:flex-none">
-            <Link href="/">
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent cursor-pointer">
-                {loading ? <span className="h-8 w-32 bg-gray-200 rounded animate-pulse inline-block"></span> : (storeData?.name || "Bella Store")}
-              </h1>
+            <Link href={isDemo ? "/demo" : "/"}>
+              <StoreLogo size="md" className="cursor-pointer" />
             </Link>
           </div>
 
           <nav className="hidden md:flex items-center space-x-8 flex-1 justify-center">
-            <Link href="/" className="text-sm font-medium hover:text-pink-500 transition-colors">
+            <Link href={isDemo ? "/demo" : "/"} className="text-sm font-medium hover:text-pink-500 transition-colors">
               Home
             </Link>
-            <MegaMenu categorySlug="feminino" label="Feminino" />
-            <MegaMenu categorySlug="masculino" label="Masculino" />
-            <MegaMenu categorySlug="infantil" label="Infantil" />
+            {isDemo && !pathname?.startsWith('/demo2') ? (
+              <>
+                <MegaMenu categorySlug="feminino" label="Feminino" />
+                <MegaMenu categorySlug="masculino" label="Masculino" />
+                <MegaMenu categorySlug="infantil" label="Infantil" />
+              </>
+            ) : isDemo && pathname?.startsWith('/demo2') ? (
+              <>
+                <MegaMenu categorySlug="smartphones" label="Smartphones" />
+                <MegaMenu categorySlug="notebooks" label="Notebooks" />
+                <MegaMenu categorySlug="fones" label="Fones" />
+              </>
+            ) : (
+              <>
+                <MegaMenu categorySlug="feminino" label="Feminino" />
+                <MegaMenu categorySlug="masculino" label="Masculino" />
+                <MegaMenu categorySlug="infantil" label="Infantil" />
+              </>
+            )}
           </nav>
 
           <div className="flex items-center gap-2">
@@ -119,7 +139,7 @@ export function Header() {
         <div className="md:hidden border-t bg-white">
           <nav className="container mx-auto px-4 py-4">
             <Link
-              href="/"
+              href={isDemo ? "/demo" : "/"}
               className="block text-sm font-medium hover:text-pink-500 transition-colors mb-4"
               onClick={() => setIsMenuOpen(false)}
             >

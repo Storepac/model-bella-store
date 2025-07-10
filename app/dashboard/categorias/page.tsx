@@ -104,7 +104,7 @@ export default function CategoriasPage() {
         order: editingCategory ? editingCategory.order : categorias.length + 1,
         subcategories: editingCategory ? editingCategory.subcategories : []
       }
-      console.log('URL da imagem enviada para o backend:', newCategory.image)
+      
       if (editingCategory) {
         await fetch('/api/categories', {
           method: 'PUT',
@@ -376,7 +376,6 @@ export default function CategoriasPage() {
                     <ImageUpload
                       value={formData.image}
                       onChange={url => {
-                        console.log('URL recebida do upload:', url)
                         setFormData((prev: any) => ({ ...prev, image: url }))
                       }}
                       placeholder="Clique para fazer upload"
@@ -541,7 +540,7 @@ export default function CategoriasPage() {
 
             <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t mt-4">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="flex-1 py-3 text-base">Cancelar</Button>
-              <Button onClick={() => { console.log('Valor de formData.image antes do save:', formData.image); handleSave(); }} disabled={saving} className="flex-1 py-3 text-base">{saving ? (
+              <Button onClick={() => { handleSave(); }} disabled={saving} className="flex-1 py-3 text-base">{saving ? (
                 <>
                   <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

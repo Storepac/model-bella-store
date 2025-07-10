@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
     const isConnected = await testBackendConnection();
     
     if (!isConnected) {
-      console.log('Backend não disponível, retornando dados mock');
       return NextResponse.json(mockData);
     }
 
@@ -23,14 +22,19 @@ export async function GET(request: NextRequest) {
     const storeId = storeIdParam ? Number(storeIdParam) : 1;
     
     // Fazer requisição para o backend
-    const result = await apiRequest(`/banners?storeId=${storeId}`);
-    return NextResponse.json(result);
+    try {
+      const banners = await apiRequest(`/banners?storeId=${storeId}`);
+      return NextResponse.json(banners);
+    } catch (error: any) {
+      // Se for 404, significa que o backend está funcionando mas o endpoint não existe
+      if (error.message.includes('404')) {
+        return NextResponse.json(mockData);
+      }
+      throw error; // Re-throw outros erros
+    }
   } catch (error: any) {
-    console.error('Error:', error)
-    
     // Se houver erro de conexão, retornar dados mock
-    if (error.message && (error.message.includes('fetch') || error.message.includes('network'))) {
-      console.log('Erro de conexão detectado, retornando dados mock');
+    if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('404')) {
       return NextResponse.json(mockData);
     }
     

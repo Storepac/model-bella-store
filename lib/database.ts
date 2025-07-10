@@ -1,6 +1,6 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-// Remover BACKEND_URL antigo e adicionar API_BASE_URL
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://backend-e5txym-30bc43-152-53-192-161.traefik.me';
+// Configuração do backend - prioriza variáveis de ambiente
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || `${BACKEND_URL}/api`;
 
 // Função para fazer requisições ao backend
@@ -14,10 +14,6 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       ? `${BACKEND_URL}${normalized}`
       : `${API_BASE_URL}${normalized}`;
     
-    console.log(`🌐 Fazendo requisição para: ${url}`);
-    console.log(`📋 Método: ${options.method || 'GET'}`);
-    console.log(`🔑 Headers:`, options.headers);
-    
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
@@ -26,11 +22,8 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
       ...options,
     });
 
-    console.log(`📊 Status da resposta: ${response.status}`);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`❌ Erro na resposta: ${response.status} - ${errorText}`);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -38,10 +31,8 @@ export const apiRequest = async (endpoint: string, options: RequestInit = {}) =>
     if (response.status === 204) return null;
     
     const data = await response.json();
-    console.log(`✅ Resposta recebida:`, data);
     return data;
   } catch (error) {
-    console.error('❌ Erro na requisição para o backend:', error);
     throw error;
   }
 };
@@ -55,7 +46,6 @@ export const testBackendConnection = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}${endpoint}`);
         if (res.ok || res.status === 404) {
-          console.log(`Backend disponível (testado em ${endpoint})`);
           return true;
         }
       } catch (_) {
@@ -64,7 +54,6 @@ export const testBackendConnection = async () => {
     }
     return false;
   } catch (error) {
-    console.error('Erro de conexão com o backend:', error);
     return false;
   }
 };

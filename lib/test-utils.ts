@@ -1,8 +1,8 @@
 // Utilitários para facilitar os testes
 export const TEST_CONFIG = {
-  // URLs de teste
-  BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'https://backend-e5txym-30bc43-152-53-192-161.traefik.me',
-  API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_BACKEND_URL || 'https://backend-e5txym-30bc43-152-53-192-161.traefik.me'}/api`,
+  // URLs de teste - prioriza variáveis de ambiente
+  BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001',
+API_BASE_URL: process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'}/api`,
   
   // Dados de teste
   TEST_STORE: {

@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Store, Lock, User, Eye, EyeOff, Shield } from "lucide-react"
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -38,18 +38,15 @@ export default function LoginPage() {
         payload.email = formData.email
       }
 
-      const response = await fetch(`${apiUrl}/auth/login`, {
+      const response = await fetch(`${apiUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
       const data = await response.json()
-      console.log('🔍 Resposta do login:', data)
       
       if (data.success) {
-        console.log('✅ Login bem-sucedido')
-        console.log('👤 Tipo de usuário:', data.data.user.tipo)
-        
+        // Salvar no localStorage
         localStorage.setItem("token", data.data.token)
         localStorage.setItem("user", JSON.stringify(data.data.user))
         if (loginType === "lojista") {
@@ -57,19 +54,28 @@ export default function LoginPage() {
         }
         localStorage.setItem("isLoggedIn", "true")
         
-        if (data.data.user.tipo === "admin_master") {
-          console.log('🔄 Redirecionando para /admin')
-          router.push("/admin")
-        } else {
-          console.log('🔄 Redirecionando para /dashboard')
-          router.push("/dashboard")
-        }
+        // Salvar token nos cookies para o middleware
+        document.cookie = `token=${data.data.token}; path=/; max-age=86400; SameSite=Lax`
+        
+        console.log("✅ Login bem-sucedido")
+        console.log("👤 Tipo de usuário:", data.data.user.tipo)
+        
+        // Aguardar um pouco antes do redirecionamento
+        setTimeout(() => {
+          if (data.data.user.tipo === "admin_master") {
+            console.log("🔄 Redirecionando para /admin")
+            window.location.href = "/admin"
+          } else {
+            console.log("🔄 Redirecionando para /dashboard")
+            window.location.href = "/dashboard"
+          }
+        }, 100)
       } else {
-        console.log('❌ Login falhou:', data.message)
-        setError(data.message || "Credenciais incorretas")
+        setError(data.message || "Erro no login")
       }
-    } catch (err) {
-      setError("Erro ao fazer login. Tente novamente.")
+    } catch (error) {
+      console.error("❌ Erro no login:", error)
+      setError("Erro de conexão. Tente novamente.")
     } finally {
       setIsLoading(false)
     }
@@ -166,6 +172,7 @@ export default function LoginPage() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="pl-10 pr-10"
+                    autoComplete="current-password"
                     required
                   />
                   <button
@@ -212,7 +219,7 @@ export default function LoginPage() {
         <div className="text-center text-sm text-muted-foreground">
           <p>
             Não tem uma loja?{" "}
-            <a href="#" className="text-pink-500 hover:underline">
+            <a href="/cadastro" className="text-pink-500 hover:underline">
               Criar conta
             </a>
           </p>

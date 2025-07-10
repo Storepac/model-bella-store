@@ -1,33 +1,37 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+const PUBLIC_PATHS = ['/', '/planos', '/demo']
+
+function isPublicPath(path: string) {
+  // Permite /, /planos, /demo e qualquer subrota de /demo
+  return (
+    path === '/' ||
+    path === '/planos' ||
+    path.startsWith('/demo')
+  )
+}
+
 export function middleware(request: NextRequest) {
-  // Temporariamente desabilitar verificação para debug
-  console.log('🔍 Middleware - Rota:', request.nextUrl.pathname)
-  
-  // Verificar se está acessando rota admin
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    console.log('🔍 Middleware - Acessando rota admin')
-    
-    // Para debug, vamos permitir acesso temporariamente
-    console.log('🔍 Middleware - Permitindo acesso temporariamente')
+  const { pathname } = request.nextUrl
+
+  // Permitir acesso às rotas públicas
+  if (isPublicPath(pathname)) {
     return NextResponse.next()
-    
-    // Verificar se está logado (comentado temporariamente)
-    // const token = request.cookies.get('token')?.value || 
-    //               request.headers.get('authorization')?.replace('Bearer ', '')
-    // 
-    // console.log('🔍 Middleware - Token encontrado:', !!token)
-    // 
-    // if (!token) {
-    //   console.log('🔍 Middleware - Redirecionando para login')
-    //   return NextResponse.redirect(new URL('/login', request.url))
-    // }
   }
 
+  // Verificar se há token de autenticação nos cookies
+  const token = request.cookies.get('token')?.value
+
+  // Se não há token e não é rota pública, redirecionar para login
+  if (!token) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Se há token, permitir acesso
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/admin/:path*']
+  matcher: ['/((?!_next|static|favicon.ico).*)']
 } 

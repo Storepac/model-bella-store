@@ -78,61 +78,31 @@ export async function GET(request: NextRequest) {
     const isConnected = await testBackendConnection();
     
     if (!isConnected) {
-      console.log('Backend não disponível, retornando dados mock');
-      return NextResponse.json({
-        success: true,
-        data: mockStoreData
-      });
+      return NextResponse.json(mockStoreData);
     }
 
+    // Pegar storeId da query string, default 1
     const { searchParams } = new URL(request.url)
-    const host = searchParams.get('host')
     const storeIdParam = searchParams.get('storeId')
-    
-    let endpoint = '/store-data';
-    const params = new URLSearchParams();
-    
-    if (storeIdParam) {
-      params.append('storeId', storeIdParam);
-    } else if (host) {
-      params.append('host', host);
-    }
-    
-    if (params.toString()) {
-      endpoint += `?${params.toString()}`;
-    }
+    const storeId = storeIdParam ? Number(storeIdParam) : 1;
     
     // Fazer requisição para o backend
     try {
-      const result = await apiRequest(endpoint);
-      return NextResponse.json(result);
+      const storeData = await apiRequest(`/store-data?storeId=${storeId}`);
+      return NextResponse.json(storeData);
     } catch (error: any) {
       // Se for 404, significa que o backend está funcionando mas o endpoint não existe
       if (error.message.includes('404')) {
-        console.log('Endpoint não encontrado no backend, retornando dados mock');
-        return NextResponse.json({
-          success: true,
-          data: mockStoreData
-        });
+        return NextResponse.json(mockStoreData);
       }
       throw error; // Re-throw outros erros
     }
-    
   } catch (error: any) {
-    console.error('Error fetching store data:', error)
-    
     // Se houver erro de conexão, retornar dados mock
     if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('404')) {
-      console.log('Erro de conexão detectado, retornando dados mock');
-      return NextResponse.json({
-        success: true,
-        data: mockStoreData
-      });
+      return NextResponse.json(mockStoreData);
     }
     
-    return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 })
   }
 } 

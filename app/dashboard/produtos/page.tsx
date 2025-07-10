@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import { useEffect, useState } from 'react'
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -27,8 +27,23 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-// Adicionar detecção de mobile
-const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+// Hook para detecção de mobile responsiva
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false)
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+  
+  return isMobile
+}
 
 export default function ProdutosPage() {
   const [products, setProducts] = useState<any[]>([])
@@ -46,7 +61,9 @@ export default function ProdutosPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<any>(null)
   const [deleting, setDeleting] = useState(false)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [categories, setCategories] = useState<any[]>([])
+  const [brands, setBrands] = useState<string[]>([])
+  const [brandFilter, setBrandFilter] = useState("todas")
   const [searchName, setSearchName] = useState("")
   const [searchSku, setSearchSku] = useState("")
   const [searchBrand, setSearchBrand] = useState("")
@@ -55,6 +72,9 @@ export default function ProdutosPage() {
   const [searchStock, setSearchStock] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
+  const isMobile = useIsMobile()
+  const [sortBy, setSortBy] = useState<'name' | 'price' | 'stock' | 'createdAt'>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
   // Função utilitária para pegar storeId do usuário logado
   const getUserStoreId = () => {
@@ -84,6 +104,13 @@ export default function ProdutosPage() {
       
       if (data.success) {
         setProducts(data.products)
+        
+        // Extrair marcas únicas dos produtos
+        const uniqueBrands = [...new Set(data.products
+          .map((p: any) => p.brand)
+          .filter((brand: string) => brand && brand.trim() !== '')
+        )].sort() as string[]
+        setBrands(uniqueBrands)
       } else {
         console.error('Erro ao carregar produtos:', data.error)
       }
@@ -111,8 +138,22 @@ export default function ProdutosPage() {
       }
     }
     
+    const fetchCategories = async () => {
+      try {
+        const storeId = getUserStoreId()
+        const res = await fetch(`/api/categories?storeId=${storeId}`)
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          setCategories(data)
+        }
+      } catch (err) {
+        console.error('Erro ao buscar categorias:', err)
+      }
+    }
+    
     loadProducts()
     fetchLimits()
+    fetchCategories()
   }, [])
 
   // Carregar categorias ao abrir modal de edição
@@ -176,15 +217,17 @@ export default function ProdutosPage() {
       })
       const data = await response.json()
       if (response.ok && data.success) {
-        // Recarregar produtos
+        // Recarregar produtos e resetar página
         await loadProducts()
         await reloadLimits()
+        setCurrentPage(1) // Resetar para primeira página
         setEditModalOpen(false)
         setEditingProduct(null)
         toast({
           title: "Produto atualizado",
           description: "Produto editado com sucesso",
         })
+        // Forçar reload da tabela
         window.dispatchEvent(new Event('productsChanged'))
       } else {
         toast({
@@ -243,7 +286,7 @@ export default function ProdutosPage() {
 
   const handleDeleteProduct = async (productId: number) => {
     setProductToDelete(products.find(p => p.id === productId))
-    setIsDialogOpen(true)
+    setDeleteModalOpen(true)
   }
 
   const confirmDeleteProduct = async () => {
@@ -280,7 +323,7 @@ export default function ProdutosPage() {
       });
     } finally {
       setDeleting(false);
-      setIsDialogOpen(false);
+      setDeleteModalOpen(false);
       setProductToDelete(null);
     }
   };
@@ -293,6 +336,7 @@ export default function ProdutosPage() {
       if (filter === "arquivados" && product.status !== 'archived') return false;
     }
     if (categoryFilter !== "todas" && categoryFilter && product.category !== categoryFilter) return false;
+    if (brandFilter !== "todas" && brandFilter && product.brand !== brandFilter) return false;
     if (searchName && !product.name.toLowerCase().includes(searchName.toLowerCase())) return false;
     if (searchSku && (!product.sku || !product.sku.toLowerCase().includes(searchSku.toLowerCase()))) return false;
     if (searchBrand && (!product.brand || !product.brand.toLowerCase().includes(searchBrand.toLowerCase()))) return false;
@@ -300,7 +344,39 @@ export default function ProdutosPage() {
     if (searchPriceMax && Number(product.price) > Number(searchPriceMax)) return false;
     if (searchStock === "com" && (!product.stock || Number(product.stock) <= 0)) return false;
     if (searchStock === "sem" && Number(product.stock) > 0) return false;
+    if (searchStock === "baixo" && Number(product.stock) > 10) return false;
+    if (searchStock === "critico" && Number(product.stock) > 5) return false;
     return true;
+  }).sort((a, b) => {
+    let aValue, bValue;
+    
+    switch (sortBy) {
+      case 'name':
+        aValue = a.name.toLowerCase();
+        bValue = b.name.toLowerCase();
+        break;
+      case 'price':
+        aValue = Number(a.price.replace(/[^\d.-]/g, ''));
+        bValue = Number(b.price.replace(/[^\d.-]/g, ''));
+        break;
+      case 'stock':
+        aValue = Number(a.stock);
+        bValue = Number(b.stock);
+        break;
+      case 'createdAt':
+        aValue = new Date(a.createdAt || 0).getTime();
+        bValue = new Date(b.createdAt || 0).getTime();
+        break;
+      default:
+        aValue = a.name.toLowerCase();
+        bValue = b.name.toLowerCase();
+    }
+    
+    if (sortOrder === 'asc') {
+      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    } else {
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+    }
   })
 
   const paginatedProducts = filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
@@ -374,6 +450,54 @@ export default function ProdutosPage() {
     );
   };
 
+  // Função para exportar produtos
+  const exportProducts = () => {
+    try {
+      const exportData = filteredProducts.map(product => ({
+        'Código': product.id,
+        'Nome': product.name,
+        'SKU': product.sku || '-',
+        'Marca': product.brand || '-',
+        'Categoria': product.category || '-',
+        'Preço': product.price,
+        'Preço Original': product.original_price || '-',
+        'Estoque': product.stock,
+        'Status': product.isActive ? 'Ativo' : 'Inativo',
+        'Descrição': product.description || '-',
+        'Data de Criação': new Date(product.createdAt || Date.now()).toLocaleDateString('pt-BR')
+      }))
+
+      // Criar CSV
+      const headers = Object.keys(exportData[0])
+      const csvContent = [
+        headers.join(','),
+        ...exportData.map(row => headers.map(header => `"${row[header as keyof typeof row]}"`).join(','))
+      ].join('\n')
+
+      // Download do arquivo
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `produtos_${new Date().toISOString().split('T')[0]}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      toast({
+        title: "Exportação concluída",
+        description: `${exportData.length} produtos exportados com sucesso`,
+      })
+    } catch (error) {
+      toast({
+        title: "Erro na exportação",
+        description: "Erro ao exportar produtos",
+        variant: "destructive",
+      })
+    }
+  }
+
   // Adicionar função para reload dos limites
   const reloadLimits = async () => {
     setLimitsLoading(true)
@@ -397,7 +521,13 @@ export default function ProdutosPage() {
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <h1 className="text-lg font-semibold md:text-2xl">Produtos</h1>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 ml-auto">
-          <Button size="sm" variant="outline" className="h-8 gap-1 bg-transparent w-full sm:w-auto">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="h-8 gap-1 bg-transparent w-full sm:w-auto"
+            onClick={() => exportProducts()}
+            disabled={products.length === 0}
+          >
             <File className="h-3.5 w-3.5" />
             <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Exportar</span>
           </Button>
@@ -430,35 +560,269 @@ export default function ProdutosPage() {
       
       <LimitsCard />
 
-      {/* Filtro no topo */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <Input placeholder="Buscar por nome, código, SKU..." value={searchName} onChange={e => setSearchName(e.target.value)} className="w-full sm:w-64" />
-        {/* Adicione outros filtros/selects conforme necessário */}
-      </div>
+      {/* Alerta de baixo estoque */}
+      {(() => {
+        const lowStockProducts = products.filter(p => p.stock <= 5 && p.stock > 0).length;
+        const outOfStockProducts = products.filter(p => p.stock <= 0).length;
+        
+        if (lowStockProducts > 0 || outOfStockProducts > 0) {
+          return (
+            <Alert className="mb-4" variant={outOfStockProducts > 0 ? "destructive" : "default"}>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {outOfStockProducts > 0 && (
+                  <span className="font-semibold text-red-700">
+                    {outOfStockProducts} produto(s) sem estoque
+                  </span>
+                )}
+                {outOfStockProducts > 0 && lowStockProducts > 0 && " • "}
+                {lowStockProducts > 0 && (
+                  <span className="font-semibold text-yellow-700">
+                    {lowStockProducts} produto(s) com baixo estoque
+                  </span>
+                )}
+                . Considere reabastecer ou atualizar o estoque.
+              </AlertDescription>
+            </Alert>
+          );
+        }
+        return null;
+      })()}
+
+      {/* Filtros melhorados */}
+      <Card className="mb-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm">Filtros de Produtos</CardTitle>
+            </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Buscar por nome</Label>
+                          <Input
+                placeholder="Nome do produto..." 
+                value={searchName} 
+                onChange={e => setSearchName(e.target.value)} 
+                className="text-sm"
+                          />
+                        </div>
+            
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Buscar por SKU</Label>
+                          <Input
+                placeholder="Código SKU..." 
+                value={searchSku} 
+                onChange={e => setSearchSku(e.target.value)} 
+                className="text-sm"
+                          />
+                        </div>
+            
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Buscar por marca</Label>
+                          <Input
+                placeholder="Nome da marca..." 
+                            value={searchBrand}
+                            onChange={e => setSearchBrand(e.target.value)}
+                className="text-sm"
+                          />
+                        </div>
+            
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Status do produto</Label>
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Selecione o status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os produtos</SelectItem>
+                  <SelectItem value="ativos">Apenas ativos</SelectItem>
+                  <SelectItem value="inativos">Apenas inativos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Categoria</Label>
+                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Selecione a categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                  <SelectItem value="todas">Todas as categorias</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.slug}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                          </SelectContent>
+                        </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Marca</Label>
+              <Select value={brandFilter} onValueChange={setBrandFilter}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Selecione a marca" />
+                          </SelectTrigger>
+                          <SelectContent>
+                  <SelectItem value="todas">Todas as marcas</SelectItem>
+                  {brands.map((brand) => (
+                    <SelectItem key={brand} value={brand}>
+                      {brand}
+                    </SelectItem>
+                  ))}
+                          </SelectContent>
+                        </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Preço mínimo</Label>
+                          <Input
+                placeholder="R$ 0,00" 
+                            type="number"
+                            value={searchPriceMin}
+                            onChange={e => setSearchPriceMin(e.target.value)}
+                className="text-sm"
+                          />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Preço máximo</Label>
+                          <Input
+                placeholder="R$ 999,99" 
+                            type="number"
+                            value={searchPriceMax}
+                            onChange={e => setSearchPriceMax(e.target.value)}
+                className="text-sm"
+                          />
+                        </div>
+            
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Situação do estoque</Label>
+                        <Select value={searchStock || "todos"} onValueChange={v => setSearchStock(v === "todos" ? "" : v)}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Selecione a situação" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos">Todos</SelectItem>
+                            <SelectItem value="com">Com estoque</SelectItem>
+                            <SelectItem value="sem">Sem estoque</SelectItem>
+                  <SelectItem value="baixo">Baixo estoque (≤ 10)</SelectItem>
+                  <SelectItem value="critico">Estoque crítico (≤ 5)</SelectItem>
+                          </SelectContent>
+                        </Select>
+            </div>
+          </div>
+          
+          {/* Ordenação e botão para limpar filtros */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs font-medium">Ordenar por:</Label>
+              <Select value={sortBy} onValueChange={(value: 'name' | 'price' | 'stock' | 'createdAt') => setSortBy(value)}>
+                <SelectTrigger className="text-sm w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Nome</SelectItem>
+                  <SelectItem value="price">Preço</SelectItem>
+                  <SelectItem value="stock">Estoque</SelectItem>
+                  <SelectItem value="createdAt">Data</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="px-2"
+              >
+                {sortOrder === 'asc' ? '↑' : '↓'}
+              </Button>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setSearchName("")
+                setSearchSku("")
+                setSearchBrand("")
+                setSearchPriceMin("")
+                setSearchPriceMax("")
+                setSearchStock("")
+                setFilter("todos")
+                setCategoryFilter("todas")
+                setBrandFilter("todas")
+                setSortBy("name")
+                setSortOrder("asc")
+                setCurrentPage(1)
+              }}
+            >
+              Limpar Filtros
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Renderização condicional: cards no mobile, tabela no desktop */}
       {isMobile ? (
         <div className="flex flex-col gap-3 mt-4">
           {paginatedProducts.map(product => (
-            <div key={product.id} className="flex items-center gap-3 p-3 rounded-xl border bg-white shadow-sm">
+            <div key={product.id} className="flex items-start gap-3 p-4 rounded-xl border bg-white shadow-sm">
               <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                 <img src={product.images?.[0] || '/placeholder.svg'} alt={product.name} className="object-cover w-full h-full" />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-1">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${product.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{product.isActive ? 'ativo' : 'inativo'}</span>
                   <span className="text-xs text-muted-foreground">{product.sku || product.id}</span>
                 </div>
-                <div className="font-semibold truncate text-base">{product.name}</div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-sm font-bold text-gray-800">{product.price}</span>
-                  <span className="text-xs bg-green-50 text-green-700 rounded px-2 py-0.5">{product.stock} unidades</span>
+                <div className="font-semibold text-base mb-1 line-clamp-2">{product.name}</div>
+                {product.brand && (
+                  <div className="text-xs text-blue-600 mb-1">{product.brand}</div>
+                )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-800">{product.price}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      product.stock <= 0 ? 'bg-red-50 text-red-700' :
+                      product.stock <= 5 ? 'bg-red-100 text-red-800' :
+                      product.stock <= 10 ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-green-50 text-green-700'
+                    }`}>
+                      {product.stock} un.
+                      {product.stock <= 5 && product.stock > 0 && (
+                        <span className="ml-1 text-xs">⚠️</span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {product.category || 'Sem categoria'}
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2 ml-2 items-end">
-                <Switch checked={product.isActive} onCheckedChange={checked => {/* lógica para ativar/desativar produto */}} />
-                <Button size="icon" variant="outline" className="w-8 h-8" onClick={() => openEditModal(product)}><Pencil className="h-4 w-4" /></Button>
-                <Button size="icon" variant="ghost" className="w-8 h-8" onClick={() => { setProductToDelete(product); setDeleteModalOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+              <div className="flex flex-col gap-1 ml-2 items-end">
+                <div className="flex gap-1">
+                  <Button 
+                    size="icon" 
+                    variant="outline" 
+                    className="w-7 h-7" 
+                    asChild
+                    title="Ver na loja"
+                  >
+                    <Link href={`/produto/${product.slug || product.id}`} target="_blank">
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </Button>
+                  <Button size="icon" variant="outline" className="w-7 h-7" onClick={() => openEditModal(product)} title="Editar">
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="w-7 h-7" onClick={() => { setProductToDelete(product); setDeleteModalOpen(true); }} title="Excluir">
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+                <Switch 
+                  checked={product.isActive} 
+                  onCheckedChange={checked => toggleProductStatus(product.id, product.isActive ? 'inactive' : 'active')}
+                  className="scale-75 mt-1"
+                />
               </div>
             </div>
           ))}
@@ -471,151 +835,86 @@ export default function ProdutosPage() {
         </div>
       ) : (
         <>
-          {/* Tabela tradicional desktop */}
+          {/* Tabela responsiva */}
           <Card>
             <CardHeader>
               <CardTitle>Produtos</CardTitle>
               <CardDescription>Gerencie seus produtos e visualize as vendas</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Tabela responsiva */}
-              <div className="w-full overflow-x-auto max-w-full">
-                <Table className="min-w-full table-auto">
+              <div className="w-full overflow-x-auto">
+                <Table className="min-w-full">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="hidden w-[60px] xs:table-cell"> <span className="sr-only">Imagem</span> </TableHead>
-                      <TableHead className="w-[80px] xs:w-[60px]">Código</TableHead>
-                      <TableHead className="min-w-[100px] xs:min-w-[150px]">Nome</TableHead>
-                      <TableHead className="hidden md:table-cell">Categoria</TableHead>
-                      <TableHead className="w-[80px] xs:w-[100px]">Status</TableHead>
-                      <TableHead className="hidden md:table-cell">Preço</TableHead>
-                      <TableHead className="hidden lg:table-cell">Estoque</TableHead>
-                      <TableHead className="hidden xl:table-cell">Vendidos</TableHead>
-                      <TableHead className="hidden xl:table-cell">Criado</TableHead>
-                      <TableHead> <span className="sr-only">Ações</span> </TableHead>
-                    </TableRow>
-                    {/* Linha de filtros */}
-                    <TableRow className="bg-muted/50">
-                      <TableCell className="hidden sm:table-cell"></TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-2 sm:gap-0 sm:flex-row">
-                          <Input
-                            placeholder="SKU"
-                            className="w-full text-xs px-2 py-1"
-                            value={searchSku}
-                            onChange={e => setSearchSku(e.target.value)}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-2 sm:gap-0 sm:flex-row">
-                          <Input
-                            placeholder="Nome"
-                            className="w-full text-xs px-2 py-1"
-                            value={searchName}
-                            onChange={e => setSearchName(e.target.value)}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <div className="flex flex-col gap-2 sm:gap-0 sm:flex-row">
-                          <Input
-                            placeholder="Marca"
-                            className="w-full text-xs px-2 py-1"
-                            value={searchBrand}
-                            onChange={e => setSearchBrand(e.target.value)}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                          <SelectTrigger className="w-full text-xs px-2 py-1">
-                            <SelectValue placeholder="Categoria" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todas">Todas</SelectItem>
-                            <SelectItem value="vestidos">Vestidos</SelectItem>
-                            <SelectItem value="blusas">Blusas</SelectItem>
-                            <SelectItem value="calcas">Calças</SelectItem>
-                            <SelectItem value="sapatos">Sapatos</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Select value={filter} onValueChange={setFilter}>
-                          <SelectTrigger className="w-full text-xs px-2 py-1">
-                            <SelectValue placeholder="Status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos">Todos</SelectItem>
-                            <SelectItem value="ativos">Ativos</SelectItem>
-                            <SelectItem value="inativos">Inativos</SelectItem>
-                            <SelectItem value="rascunho">Rascunho</SelectItem>
-                            <SelectItem value="arquivados">Arquivados</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <div className="flex flex-col gap-2 sm:gap-0 sm:flex-row">
-                          <Input
-                            placeholder="Mín"
-                            className="w-full sm:w-16 text-xs px-2 py-1"
-                            type="number"
-                            value={searchPriceMin}
-                            onChange={e => setSearchPriceMin(e.target.value)}
-                          />
-                          <Input
-                            placeholder="Máx"
-                            className="w-full sm:w-16 text-xs px-2 py-1"
-                            type="number"
-                            value={searchPriceMax}
-                            onChange={e => setSearchPriceMax(e.target.value)}
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <Select value={searchStock || "todos"} onValueChange={v => setSearchStock(v === "todos" ? "" : v)}>
-                          <SelectTrigger className="w-full text-xs px-2 py-1">
-                            <SelectValue placeholder="Estoque" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos">Todos</SelectItem>
-                            <SelectItem value="com">Com estoque</SelectItem>
-                            <SelectItem value="sem">Sem estoque</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-cell"></TableCell>
-                      <TableCell className="hidden xl:table-cell"></TableCell>
-                      <TableCell></TableCell>
+                      <TableHead className="w-[60px]">Imagem</TableHead>
+                      <TableHead className="min-w-[120px]">Produto</TableHead>
+                      <TableHead className="hidden md:table-cell min-w-[100px]">Categoria</TableHead>
+                      <TableHead className="w-[80px]">Status</TableHead>
+                      <TableHead className="hidden sm:table-cell min-w-[80px]">Preço</TableHead>
+                      <TableHead className="hidden lg:table-cell min-w-[80px]">Estoque</TableHead>
+                      <TableHead className="w-[120px]">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredProducts.map((product) => (
+                    {paginatedProducts.map((product) => (
                       <TableRow key={product.id}>
-                        <TableCell className="w-20">
+                        <TableCell>
                           <img src={product.images?.[0] || '/placeholder.svg'} alt={product.name} className="w-12 h-12 rounded-lg object-cover border" />
                         </TableCell>
                         <TableCell>
-                          <div className="font-semibold text-base truncate">{product.name}</div>
+                          <div className="font-semibold text-sm truncate">{product.name}</div>
                           <div className="text-xs text-muted-foreground">{product.sku || product.id}</div>
+                          {product.brand && (
+                            <div className="text-xs text-blue-600">{product.brand}</div>
+                          )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           <span className="text-xs text-muted-foreground">{product.category && product.category.trim() !== '' ? product.category : '-'}</span>
                         </TableCell>
                         <TableCell>
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${product.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{product.isActive ? 'ativo' : 'inativo'}</span>
                         </TableCell>
-                        <TableCell>
-                          <span className="font-bold">{product.price}</span>
+                        <TableCell className="hidden sm:table-cell">
+                          <span className="font-bold text-sm">{product.price}</span>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            product.stock <= 0 ? 'bg-red-50 text-red-700' :
+                            product.stock <= 5 ? 'bg-red-100 text-red-800' :
+                            product.stock <= 10 ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-50 text-green-700'
+                          }`}>
+                            {product.stock} unidades
+                            {product.stock <= 5 && product.stock > 0 && (
+                              <span className="ml-1 text-xs">⚠️</span>
+                            )}
+                          </span>
                         </TableCell>
                         <TableCell>
-                          <span className="text-xs bg-green-50 text-green-700 rounded px-2 py-0.5">{product.stock} unidades</span>
-                        </TableCell>
-                        <TableCell className="flex gap-2 items-center">
-                          <Switch checked={product.isActive} onCheckedChange={checked => {/* lógica para ativar/desativar produto */}} />
-                          <Button size="icon" variant="outline" className="w-8 h-8" onClick={() => openEditModal(product)}><Pencil className="h-4 w-4" /></Button>
-                          <Button size="icon" variant="ghost" className="w-8 h-8" onClick={() => { setProductToDelete(product); setDeleteModalOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                          <div className="flex gap-1 items-center">
+                            <Button 
+                              size="icon" 
+                              variant="outline" 
+                              className="w-7 h-7" 
+                              asChild
+                              title="Ver na loja"
+                            >
+                              <Link href={`/produto/${product.slug || product.id}`} target="_blank">
+                                <ExternalLink className="h-3 w-3" />
+                              </Link>
+                            </Button>
+                            <Switch 
+                              checked={product.isActive} 
+                              onCheckedChange={checked => toggleProductStatus(product.id, product.isActive ? 'inactive' : 'active')}
+                              className="scale-75"
+                            />
+                            <Button size="icon" variant="outline" className="w-7 h-7" onClick={() => openEditModal(product)} title="Editar">
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="w-7 h-7" onClick={() => { setProductToDelete(product); setDeleteModalOpen(true); }} title="Excluir">
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -796,8 +1095,8 @@ export default function ProdutosPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de exclusão - Corrigido */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      {/* Modal de exclusão */}
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -811,7 +1110,7 @@ export default function ProdutosPage() {
           <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
             <Button 
               variant="outline" 
-              onClick={() => setIsDialogOpen(false)} 
+              onClick={() => setDeleteModalOpen(false)} 
               disabled={deleting}
               className="w-full sm:w-auto"
             >
