@@ -155,8 +155,8 @@ const mockCategories = [
               title: 'Vestidos Casuais',
               description: 'Vestidos confortáveis para o dia a dia',
               keywords: ['vestidos', 'casuais', 'confortáveis']
-            },
-            subcategories: []
+        },
+        subcategories: []
           }
         ]
       },
@@ -447,7 +447,7 @@ export async function GET(request: NextRequest) {
       
       // Garantir que sempre retorne um array
       if (Array.isArray(categoriesTree)) {
-        return NextResponse.json(categoriesTree);
+      return NextResponse.json(categoriesTree);
       } else if (categoriesTree && categoriesTree.data && Array.isArray(categoriesTree.data)) {
         return NextResponse.json(categoriesTree.data);
       } else {
@@ -462,7 +462,7 @@ export async function GET(request: NextRequest) {
     }
   } catch (error: any) {
     // Em caso de erro, retornar dados mock ao invés de erro 500
-    return NextResponse.json(mockCategories);
+      return NextResponse.json(mockCategories);
   }
 }
 
