@@ -27,6 +27,24 @@ export function resolveStoreId(host: string, searchParams?: URLSearchParams): nu
   return defaultStoreId
 }
 
+// Versão assíncrona que funciona no cliente
+export async function resolveStoreIdClient(): Promise<number> {
+  if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search)
+    const storeParam = urlParams.get('store')
+    
+    if (storeParam) {
+      const storeId = parseInt(storeParam)
+      if (!isNaN(storeId)) {
+        return storeId
+      }
+    }
+  }
+  
+  // Fallback para storeId padrão
+  return 1
+}
+
 // Função para limpar cache (útil para testes)
 export function clearStoreIdCache() {
   storeIdCache.clear()

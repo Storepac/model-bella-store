@@ -6,7 +6,7 @@ import { ProductCard } from '@/components/product-card'
 import { useRouter } from 'next/navigation'
 import { storeData } from '@/lib/store-data'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { resolveStoreId } from '@/lib/store-id'
+import { resolveStoreIdClient } from '@/lib/store-id'
 
 export default function PromocoesPage() {
   const [produtos, setProdutos] = useState<any[]>([])
@@ -17,7 +17,7 @@ export default function PromocoesPage() {
     const fetchPromocoes = async () => {
       setLoading(true)
       try {
-        const resolvedStoreId = await resolveStoreId()
+        const resolvedStoreId = await resolveStoreIdClient()
         setStoreId(resolvedStoreId)
         const res = await fetch(`/api/products?storeId=${resolvedStoreId}&isPromotion=1`)
         const data = await res.json()

@@ -24,6 +24,20 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
+    
+    /* Variáveis customizadas para aparência */
+    --primary-color: #ec4899;
+    --secondary-color: #8b5cf6;
+    --button-color: #ec4899;
+    --accent-color: #f59e0b;
+    --background-color: #ffffff;
+    --text-color: #1f2937;
+    --header-color: #ffffff;
+    --footer-color: #111827;
+    --link-color: #3b82f6;
+    --border-radius: 8px;
+    --container-width: 1200px;
+    --font-family: 'Inter', sans-serif;
   }
 
   .dark {
@@ -46,6 +60,130 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer components {
+  /* Botões customizados */
+  .btn-custom {
+    background-color: var(--button-color);
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease;
+  }
+  
+  .btn-custom:hover {
+    filter: brightness(0.9);
+  }
+  
+  /* Container customizado */
+  .container-custom {
+    max-width: var(--container-width);
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  
+  /* Cards customizados */
+  .card-custom {
+    border-radius: var(--border-radius);
+    background-color: var(--background-color);
+    color: var(--text-color);
+  }
+  
+  /* Links customizados */
+  .link-custom {
+    color: var(--link-color);
+  }
+  
+  /* Texto com cor customizada */
+  .text-custom {
+    color: var(--text-color);
+  }
+  
+  /* Header customizado */
+  .header-custom {
+    background-color: var(--header-color);
+    color: var(--text-color);
+  }
+  
+  /* Footer customizado */
+  .footer-custom {
+    background-color: var(--footer-color);
+    color: white;
+  }
+}
+
+@layer utilities {
+  /* Classes condicionais para estilos */
+  .shadows-enabled .card-custom {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+  
+  .animations-enabled * {
+    transition: all 0.2s ease;
+  }
+  
+  .gradients-enabled .btn-custom {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  }
+  
+  /* Espaçamento */
+  .spacing-tight {
+    --spacing-base: 0.5rem;
+  }
+  
+  .spacing-normal {
+    --spacing-base: 1rem;
+  }
+  
+  .spacing-loose {
+    --spacing-base: 1.5rem;
+  }
+  
+  /* Tamanhos de fonte */
+  .font-size-small {
+    font-size: 0.875rem;
+  }
+  
+  .font-size-medium {
+    font-size: 1rem;
+  }
+  
+  .font-size-large {
+    font-size: 1.125rem;
+  }
+  
+  /* Peso da fonte */
+  .font-weight-light {
+    font-weight: 300;
+  }
+  
+  .font-weight-normal {
+    font-weight: 400;
+  }
+  
+  .font-weight-medium {
+    font-weight: 500;
+  }
+  
+  .font-weight-bold {
+    font-weight: 700;
+  }
+  
+  /* Estilos de card */
+  .card-style-modern .card-custom {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+  }
+  
+  .card-style-classic .card-custom {
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  
+  .card-style-minimal .card-custom {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
   }
 }
 

@@ -140,21 +140,32 @@ export default function LojaPage() {
         return
       }
       const payload = {
-        store_name: storeInfo.name,
-        store_description: storeInfo.description,
-        logo_url: '',
-        whatsapp_number: storeInfo.whatsapp,
+        name: storeInfo.name,
+        description: storeInfo.description,
         email: storeInfo.email,
-        address: storeInfo.address,
+        whatsapp: storeInfo.whatsapp,
+        endereco: storeInfo.address,
         cnpj: storeInfo.cnpj,
-        ie: storeInfo.ie,
+        inscricao_estadual: storeInfo.ie,
         instagram: storeInfo.instagram,
         facebook: storeInfo.facebook,
         youtube: storeInfo.youtube,
-        tiktok: storeInfo.tiktok,
         horarios: JSON.stringify(storeInfo.workingHours),
         politicas_troca: storeInfo.exchangePolicy,
         politicas_gerais: storeInfo.privacyPolicy,
+        // Campos específicos da loja
+        phone: storeInfo.phone,
+        website: storeInfo.website,
+        complement: storeInfo.complement,
+        neighborhood: storeInfo.neighborhood,
+        city: storeInfo.city,
+        state: storeInfo.state,
+        zipCode: storeInfo.zipCode,
+        tiktok: storeInfo.tiktok,
+        freeShippingMinValue: storeInfo.freeShippingMinValue,
+        shippingTime: storeInfo.shippingTime,
+        returnPolicy: storeInfo.returnPolicy,
+        termsOfService: storeInfo.termsOfService,
         announcement1: storeInfo.announcement1,
         announcement2: storeInfo.announcement2,
         announcementContact: storeInfo.announcementContact
@@ -188,11 +199,11 @@ export default function LojaPage() {
   const handleWorkingHoursUpdate = (day: string, field: 'open' | 'close' | 'closed', value: any) => {
     setStoreInfo(prev => {
       if (!prev) return null;
-      const newWorkingHours = { ...prev.workingHours };
+      const newWorkingHours = { ...prev.workingHours } as any;
       if (!newWorkingHours[day]) {
         newWorkingHours[day] = { open: '', close: '', closed: true };
       }
-      (newWorkingHours[day] as any)[field] = value;
+      newWorkingHours[day][field] = value;
       return { ...prev, workingHours: newWorkingHours };
     });
   };

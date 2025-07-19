@@ -10,13 +10,27 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Upload, Palette, Type, ImageIcon, Save, Eye, Monitor, Smartphone, Tablet } from "lucide-react"
-import { useStoreData } from '@/hooks/use-store-data'
+
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
+const getStoreId = () => {
+  if (typeof window !== 'undefined') {
+    const userStr = localStorage.getItem('user')
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr)
+        return user.storeId || 1
+      } catch {}
+    }
+  }
+  return 1
+}
+
 export default function AparenciaPage() {
-  const { storeData, loading } = useStoreData()
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [storeId, setStoreId] = useState<number>(1)
   const [settings, setSettings] = useState({
     // Cores
     primaryColor: "#ec4899",
@@ -82,47 +96,59 @@ export default function AparenciaPage() {
   })
 
   useEffect(() => {
-    if (storeData) {
-      setSettings(prev => ({
-        ...prev,
-        storeName: storeData.name || prev.storeName,
-        logoUrl: storeData.logo || prev.logoUrl,
-        instagram: storeData.instagram || prev.instagram,
-        facebook: storeData.facebook || prev.facebook,
-        tiktok: storeData.tiktok || prev.tiktok,
-        youtube: storeData.youtube || prev.youtube,
-      }))
+    const loadSettings = async () => {
+      setLoading(true)
+      try {
+        const currentStoreId = getStoreId()
+        setStoreId(currentStoreId)
+        
+        const response = await fetch(`/api/appearance/${currentStoreId}`)
+        const data = await response.json()
+        
+        if (data.success && data.data) {
+          const config = data.data
+          
+          // Mesclar configurações carregadas com padrões
+          setSettings(prev => ({
+            ...prev,
+            primaryColor: config.primaryColor || prev.primaryColor,
+            secondaryColor: config.secondaryColor || prev.secondaryColor,
+            buttonColor: config.buttonColor || prev.buttonColor,
+            fontFamily: config.font || prev.fontFamily,
+            ...config.settings // Todas as configurações avançadas
+          }))
+        }
+      } catch (error) {
+        console.error('Erro ao carregar configurações:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [storeData])
+    
+    loadSettings()
+  }, [])
 
   const handleSave = async () => {
-    if (!storeData) return
-    
     setSaving(true)
     try {
-      const response = await fetch(`/api/stores/${storeData.id}`, {
+      const token = localStorage.getItem('token')
+      
+      const response = await fetch(`/api/appearance/${storeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
         },
-        body: JSON.stringify({
-          ...storeData,
-          name: settings.storeName,
-          logo: settings.logoUrl,
-          instagram: settings.instagram,
-          facebook: settings.facebook,
-          tiktok: settings.tiktok,
-          youtube: settings.youtube,
-          // Salvar configurações de aparência em um campo JSON
-          appearance_settings: JSON.stringify(settings)
-        }),
+        body: JSON.stringify(settings)
       })
 
-      if (!response.ok) {
-        throw new Error('Erro ao salvar configurações')
-      }
+      const data = await response.json()
 
-      setShowSuccessModal(true)
+      if (data.success) {
+        setShowSuccessModal(true)
+      } else {
+        throw new Error(data.message || 'Erro ao salvar configurações')
+      }
     } catch (error) {
       console.error('Erro ao salvar:', error)
       alert('Erro ao salvar configurações. Tente novamente.')
@@ -132,7 +158,7 @@ export default function AparenciaPage() {
   }
 
   const handlePreview = () => {
-    window.open("/", "_blank")
+    window.open(`/?store=${storeId}`, "_blank")
   }
 
   const colorPresets = [

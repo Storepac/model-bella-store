@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel"
-import { resolveStoreId } from '@/lib/store-id'
+import { resolveStoreIdClient } from '@/lib/store-id'
 
 interface Category {
   id: number
@@ -23,7 +23,7 @@ export function CategoryGrid() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const storeId = await resolveStoreId()
+        const storeId = await resolveStoreIdClient()
         const response = await fetch(`/api/categories?storeId=${storeId}`)
         const data = await response.json()
         

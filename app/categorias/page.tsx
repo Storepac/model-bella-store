@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import Link from "next/link"
-import { resolveStoreId } from '@/lib/store-id'
+import { resolveStoreIdClient } from '@/lib/store-id'
 import { useState, useEffect } from 'react'
 
 export default function CategoriasPage() {
@@ -15,7 +15,7 @@ export default function CategoriasPage() {
   useEffect(() => {
     const fetchCategorias = async () => {
       try {
-        const resolvedStoreId = await resolveStoreId()
+        const resolvedStoreId = await resolveStoreIdClient()
         setStoreId(resolvedStoreId)
         const res = await fetch(`/api/categories?storeId=${resolvedStoreId}`)
         // ... existing code ...

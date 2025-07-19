@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { resolveStoreId } from '@/lib/store-id'
+import { resolveStoreIdClient } from '@/lib/store-id'
 
 interface Category {
   id: string
@@ -72,7 +72,7 @@ export default function CategoryPage() {
     const fetchCategory = async () => {
       setLoading(true)
       try {
-        const resolvedStoreId = await resolveStoreId()
+        const resolvedStoreId = await resolveStoreIdClient()
         setStoreId(resolvedStoreId)
         
         const response = await fetch(`/api/categories?slug=${slug}&storeId=${resolvedStoreId}`)

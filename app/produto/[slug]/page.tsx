@@ -10,7 +10,7 @@ import { CartToast } from "@/components/cart-toast"
 import { useCart } from "@/lib/cart-context"
 import { useStoreData } from "@/hooks/use-store-data"
 import Image from "next/image"
-import { resolveStoreId } from '@/lib/store-id'
+import { resolveStoreIdClient } from '@/lib/store-id'
 import { Separator } from "@/components/ui/separator"
 
 export default function ProductPage() {
@@ -33,7 +33,7 @@ export default function ProductPage() {
     const fetchProduct = async () => {
       setLoading(true)
       try {
-        const resolvedStoreId = await resolveStoreId()
+        const resolvedStoreId = await resolveStoreIdClient()
         setStoreId(resolvedStoreId)
         
         const response = await fetch(`/api/products/${params.slug}?storeId=${resolvedStoreId}`, {
