@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { apiRequest, testBackendConnection } from '@/lib/database'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,7 +10,54 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.substring(7)
     
-    // Tentar buscar dados do backend
+    // Testar conexão com o backend
+    const isConnected = await testBackendConnection()
+    
+    if (!isConnected) {
+      // Dados mock realistas para demonstração
+      const mockData = {
+        totalStores: 5,
+        totalProducts: 156,
+        totalRevenue: 45678.90,
+        activeStores: 4,
+        pendingStores: 1,
+        recentStores: [
+          {
+            id: 1,
+            name: "Bella Store Fashion",
+            status: "active",
+            createdAt: "2024-01-15T10:30:00Z"
+          },
+          {
+            id: 2,
+            name: "Moda Elegante Boutique",
+            status: "active", 
+            createdAt: "2024-01-14T14:20:00Z"
+          },
+          {
+            id: 3,
+            name: "Style Express",
+            status: "active",
+            createdAt: "2024-01-13T09:15:00Z"
+          },
+          {
+            id: 4,
+            name: "Fashion Trend",
+            status: "pending",
+            createdAt: "2024-01-12T16:45:00Z"
+          },
+          {
+            id: 5,
+            name: "Outlet Moda",
+            status: "active",
+            createdAt: "2024-01-11T11:20:00Z"
+          }
+        ]
+      }
+      return NextResponse.json(mockData)
+    }
+
+    // Tentar buscar dados reais do backend
     try {
       const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
       const response = await fetch(`${backendUrl}/api/admin/overview`, {
@@ -24,40 +72,87 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(data)
       }
     } catch (error) {
-      // Se o backend não estiver disponível, retornar dados mock
+      console.log('Endpoint admin/overview não disponível no backend')
     }
 
-    // Dados mock para demonstração
-    const mockData = {
-      totalStores: 15,
-      totalProducts: 234,
-      totalRevenue: 45678.90,
-      activeStores: 12,
-      pendingStores: 3,
-      recentStores: [
-        {
-          id: 1,
-          name: "Loja Fashion",
-          status: "active",
-          createdAt: "2024-01-15T10:30:00Z"
-        },
-        {
-          id: 2,
-          name: "Boutique Elegante",
-          status: "active",
-          createdAt: "2024-01-14T14:20:00Z"
-        },
-        {
-          id: 3,
-          name: "Moda Express",
-          status: "pending",
-          createdAt: "2024-01-13T09:15:00Z"
-        }
-      ]
-    }
+    // Fallback: Buscar dados individuais e consolidar
+    try {
+      const [storesRes, productsRes, ordersRes] = await Promise.all([
+        apiRequest('/stores').catch(() => ({ stores: [] })),
+        apiRequest('/products').catch(() => ({ products: [] })),
+        apiRequest('/orders').catch(() => ({ orders: [] }))
+      ])
 
-    return NextResponse.json(mockData)
-  } catch (error) {
+      const stores = storesRes.stores || []
+      const products = productsRes.products || []
+      const orders = ordersRes.orders || []
+
+      // Consolidar dados reais
+      const consolidatedData = {
+        totalStores: stores.length,
+        totalProducts: products.length,
+        totalRevenue: orders.reduce((sum: number, order: any) => sum + (order.totalValue || 0), 0),
+        activeStores: stores.filter((store: any) => store.status === 'active' || store.isActive).length,
+        pendingStores: stores.filter((store: any) => store.status === 'pending' || !store.isActive).length,
+        recentStores: stores
+          .sort((a: any, b: any) => new Date(b.createdAt || b.created_at || Date.now()).getTime() - new Date(a.createdAt || a.created_at || Date.now()).getTime())
+          .slice(0, 5)
+          .map((store: any) => ({
+            id: store.id,
+            name: store.name || store.storeName || `Loja ${store.id}`,
+            status: store.status || (store.isActive ? 'active' : 'pending'),
+            createdAt: store.createdAt || store.created_at || new Date().toISOString()
+          }))
+      }
+
+      return NextResponse.json(consolidatedData)
+    } catch (error) {
+      console.log('Erro ao buscar dados individuais, usando mock:', error)
+      
+      // Dados mock como último recurso
+      const mockData = {
+        totalStores: 5,
+        totalProducts: 156,
+        totalRevenue: 45678.90,
+        activeStores: 4,
+        pendingStores: 1,
+        recentStores: [
+          {
+            id: 1,
+            name: "Bella Store Fashion",
+            status: "active",
+            createdAt: "2024-01-15T10:30:00Z"
+          },
+          {
+            id: 2,
+            name: "Moda Elegante Boutique", 
+            status: "active",
+            createdAt: "2024-01-14T14:20:00Z"
+          },
+          {
+            id: 3,
+            name: "Style Express",
+            status: "active",
+            createdAt: "2024-01-13T09:15:00Z"
+          },
+          {
+            id: 4,
+            name: "Fashion Trend",
+            status: "pending",
+            createdAt: "2024-01-12T16:45:00Z"
+          },
+          {
+            id: 5,
+            name: "Outlet Moda",
+            status: "active",
+            createdAt: "2024-01-11T11:20:00Z"
+          }
+        ]
+      }
+      
+      return NextResponse.json(mockData)
+    }
+  } catch (error: any) {
     console.error('❌ Erro na API admin/overview:', error)
     return NextResponse.json(
       { success: false, message: 'Erro interno do servidor' },
