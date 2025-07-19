@@ -54,8 +54,23 @@ export default function DashboardPage() {
           <Badge variant="secondary" className="bg-green-100 text-green-800">
             Loja Online
           </Badge>
-          <Button asChild>
-            <a href="/catalogo" target="_blank">Ver Loja</a>
+          <Button onClick={() => {
+            // Pegar storeId do usuário logado
+            let storeId = 1;
+            if (typeof window !== 'undefined') {
+              const userStr = localStorage.getItem('user')
+              if (userStr) {
+                try {
+                  const user = JSON.parse(userStr)
+                  if (user.storeId) {
+                    storeId = user.storeId
+                  }
+                } catch {}
+              }
+            }
+            window.open(`/?store=${storeId}`, '_blank')
+          }}>
+            Ver Loja
           </Button>
         </div>
       </div>

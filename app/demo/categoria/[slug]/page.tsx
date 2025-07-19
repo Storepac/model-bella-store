@@ -231,14 +231,20 @@ const demoProducts = {
   ]
 }
 
-export default function DemoCategoryPage({ params }: { params: { slug: string } }) {
+export default async function DemoCategoryPage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params
+  
+  return <DemoCategoryContent slug={resolvedParams.slug} />
+}
+
+function DemoCategoryContent({ slug }: { slug: string }) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [showToast, setShowToast] = useState(false)
   const [toastProduct, setToastProduct] = useState("")
   const { addItem } = useCart()
 
-  const category = demoCategories.find(cat => cat.slug === params.slug)
-  const products = demoProducts[params.slug as keyof typeof demoProducts] || []
+  const category = demoCategories.find(cat => cat.slug === slug)
+  const products = demoProducts[slug as keyof typeof demoProducts] || []
 
   const handleAddToCart = (product: any) => {
     addItem(product)

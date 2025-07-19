@@ -256,7 +256,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     variant="outline" 
                     size="sm" 
                     className="w-full justify-start bg-transparent"
-                    onClick={() => window.open('/', '_blank')}
+                    onClick={() => {
+                      // Pegar storeId do usuário logado
+                      let storeId = 1;
+                      if (typeof window !== 'undefined') {
+                        const userStr = localStorage.getItem('user')
+                        if (userStr) {
+                          try {
+                            const user = JSON.parse(userStr)
+                            if (user.storeId) {
+                              storeId = user.storeId
+                            }
+                          } catch {}
+                        }
+                      }
+                      window.open(`/?store=${storeId}`, '_blank')
+                    }}
                   >
                     <Home className="mr-2 h-4 w-4" />
                     Ver Loja

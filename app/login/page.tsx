@@ -201,13 +201,13 @@ export default function LoginPage() {
                 <p className="mb-2">Dados para teste:</p>
                 <div className="bg-gray-50 p-3 rounded-md text-left">
                   <p>
-                    <strong>Código:</strong> loja001
+                    <strong>Lojista - Código:</strong> loja001
                   </p>
                   <p>
-                    <strong>E-mail:</strong> admin@admin
+                    <strong>Admin Master - E-mail:</strong> admin@teste.com
                   </p>
                   <p>
-                    <strong>Senha:</strong> 123
+                    <strong>Senha (ambos):</strong> 123
                   </p>
                 </div>
               </div>

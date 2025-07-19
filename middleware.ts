@@ -1,14 +1,29 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/', '/planos', '/demo']
+const PUBLIC_PATHS = ['/', '/planos', '/demo', '/login', '/acesso', '/cadastro']
 
 function isPublicPath(path: string) {
-  // Permite /, /planos, /demo e qualquer subrota de /demo
+  // Permite rotas públicas e suas subrotas
   return (
     path === '/' ||
     path === '/planos' ||
-    path.startsWith('/demo')
+    path === '/login' ||
+    path === '/acesso' ||
+    path === '/cadastro' ||
+    path.startsWith('/demo') ||
+    path.startsWith('/categoria') ||
+    path.startsWith('/produto') ||
+    path.startsWith('/catalogo') ||
+    path.startsWith('/sobre') ||
+    path.startsWith('/politica') ||
+    path.startsWith('/termos') ||
+    path.startsWith('/promocoes') ||
+    path.startsWith('/lancamentos') ||
+    path.startsWith('/categorias') ||
+    path.startsWith('/api/') ||
+    path.startsWith('/_next') ||
+    path.startsWith('/static')
   )
 }
 

@@ -93,12 +93,18 @@ export default function ProdutosPage() {
     return storeId;
   }
 
-  const loadProducts = async () => {
+  const loadProducts = async (forceReload = false) => {
     setLoading(true)
     try {
       const storeId = getUserStoreId()
-      const response = await fetch(`/api/products?storeId=${storeId}`, {
-        cache: 'no-store'
+      const timestamp = forceReload ? `&_t=${Date.now()}` : ''
+      const response = await fetch(`/api/products?storeId=${storeId}${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       })
       const data = await response.json()
       
@@ -217,18 +223,28 @@ export default function ProdutosPage() {
       })
       const data = await response.json()
       if (response.ok && data.success) {
-        // Recarregar produtos e resetar página
-        await loadProducts()
-        await reloadLimits()
-        setCurrentPage(1) // Resetar para primeira página
+        // Primeiro fechar o modal para melhor UX
         setEditModalOpen(false)
         setEditingProduct(null)
+        
+        // Recarregar produtos com cache invalidado
+        await loadProducts(true)
+        await reloadLimits()
+        setCurrentPage(1) // Resetar para primeira página
+        
         toast({
           title: "Produto atualizado",
           description: "Produto editado com sucesso",
         })
-        // Forçar reload da tabela
+        
+        // Forçar reload da tabela e disparar evento
         window.dispatchEvent(new Event('productsChanged'))
+        
+        // Força um re-render adicional
+        setTimeout(() => {
+          setFilter("todos") // Reset filtros pode ajudar a forçar reload
+          setCurrentPage(1)
+        }, 100)
       } else {
         toast({
           title: "Erro ao atualizar produto",
@@ -450,52 +466,119 @@ export default function ProdutosPage() {
     );
   };
 
-  // Função para exportar produtos
-  const exportProducts = () => {
+  // Função para exportar produtos melhorada
+  const exportProducts = (format: 'csv' | 'excel' = 'csv') => {
     try {
+      if (filteredProducts.length === 0) {
+        toast({
+          title: "Nenhum produto para exportar",
+          description: "Ajuste os filtros para encontrar produtos",
+          variant: "destructive",
+        })
+        return
+      }
+
       const exportData = filteredProducts.map(product => ({
-        'Código': product.id,
-        'Nome': product.name,
+        'ID': product.id,
+        'Nome do Produto': product.name,
         'SKU': product.sku || '-',
         'Marca': product.brand || '-',
         'Categoria': product.category || '-',
-        'Preço': product.price,
+        'Preço de Venda': product.price,
         'Preço Original': product.original_price || '-',
-        'Estoque': product.stock,
+        'Quantidade em Estoque': product.stock,
         'Status': product.isActive ? 'Ativo' : 'Inativo',
-        'Descrição': product.description || '-',
-        'Data de Criação': new Date(product.createdAt || Date.now()).toLocaleDateString('pt-BR')
+        'Descrição': product.description?.replace(/"/g, '""') || '-',
+        'Data de Criação': new Date(product.createdAt || Date.now()).toLocaleDateString('pt-BR'),
+        'Situação do Estoque': product.stock <= 0 ? 'Sem estoque' : 
+                               product.stock <= 5 ? 'Estoque crítico' :
+                               product.stock <= 10 ? 'Baixo estoque' : 'Estoque normal'
       }))
 
-      // Criar CSV
       const headers = Object.keys(exportData[0])
-      const csvContent = [
-        headers.join(','),
-        ...exportData.map(row => headers.map(header => `"${row[header as keyof typeof row]}"`).join(','))
-      ].join('\n')
+      const timestamp = new Date().toISOString().split('T')[0]
+      const storeInfo = getUserStoreId()
+      
+      if (format === 'csv') {
+        // Exportar como CSV
+        const csvContent = [
+          `# Relatório de Produtos - ${new Date().toLocaleDateString('pt-BR')}`,
+          `# Total: ${exportData.length} produtos`,
+          `# Filtros aplicados: ${searchName ? 'Nome: ' + searchName + '; ' : ''}${filter !== 'todos' ? 'Status: ' + filter + '; ' : ''}${categoryFilter !== 'todas' ? 'Categoria: ' + categoryFilter + '; ' : ''}`,
+          '',
+          headers.join(','),
+          ...exportData.map(row => 
+            headers.map(header => {
+              const value = row[header as keyof typeof row]
+              return `"${String(value).replace(/"/g, '""')}"`
+            }).join(',')
+          )
+        ].join('\n')
 
-      // Download do arquivo
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-      const link = document.createElement('a')
-      const url = URL.createObjectURL(blob)
-      link.setAttribute('href', url)
-      link.setAttribute('download', `produtos_${new Date().toISOString().split('T')[0]}.csv`)
-      link.style.visibility = 'hidden'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+        downloadFile(blob, `produtos_loja_${storeInfo}_${timestamp}.csv`)
+      } else {
+        // Exportar como Excel (HTML table que o Excel pode abrir)
+        const excelContent = `
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <style>
+                table { border-collapse: collapse; width: 100%; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; font-weight: bold; }
+                .header { background-color: #4CAF50; color: white; }
+              </style>
+            </head>
+            <body>
+              <h2>Relatório de Produtos - ${new Date().toLocaleDateString('pt-BR')}</h2>
+              <p><strong>Total:</strong> ${exportData.length} produtos</p>
+              <p><strong>Exportado em:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+              <table>
+                <thead>
+                  <tr class="header">
+                    ${headers.map(header => `<th>${header}</th>`).join('')}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${exportData.map(row => 
+                    `<tr>${headers.map(header => `<td>${row[header as keyof typeof row]}</td>`).join('')}</tr>`
+                  ).join('')}
+                </tbody>
+              </table>
+            </body>
+          </html>
+        `
+        
+        const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' })
+        downloadFile(blob, `produtos_loja_${storeInfo}_${timestamp}.xls`)
+      }
 
       toast({
-        title: "Exportação concluída",
-        description: `${exportData.length} produtos exportados com sucesso`,
+        title: "✅ Exportação concluída",
+        description: `${exportData.length} produtos exportados em ${format.toUpperCase()}`,
       })
     } catch (error) {
+      console.error('Erro na exportação:', error)
       toast({
         title: "Erro na exportação",
-        description: "Erro ao exportar produtos",
+        description: "Erro ao exportar produtos. Tente novamente.",
         variant: "destructive",
       })
     }
+  }
+
+  // Função auxiliar para download
+  const downloadFile = (blob: Blob, filename: string) => {
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', filename)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   // Adicionar função para reload dos limites
@@ -521,16 +604,32 @@ export default function ProdutosPage() {
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <h1 className="text-lg font-semibold md:text-2xl">Produtos</h1>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 ml-auto">
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="h-8 gap-1 bg-transparent w-full sm:w-auto"
-            onClick={() => exportProducts()}
-            disabled={products.length === 0}
-          >
-            <File className="h-3.5 w-3.5" />
-            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">Exportar</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-8 gap-1 bg-transparent w-full sm:w-auto"
+                disabled={filteredProducts.length === 0}
+              >
+                <File className="h-3.5 w-3.5" />
+                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                  Exportar ({filteredProducts.length})
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>📊 Formato de Exportação</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => exportProducts('csv')}>
+                <File className="h-4 w-4 mr-2" />
+                CSV (Excel, Google Sheets)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportProducts('excel')}>
+                <Package className="h-4 w-4 mr-2" />
+                Excel (.xls)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {limits && !limits.products.canAdd ? (
             <TooltipProvider>
               <Tooltip>
@@ -592,246 +691,317 @@ export default function ProdutosPage() {
       {/* Filtros melhorados */}
       <Card className="mb-4">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Filtros de Produtos</CardTitle>
-            </CardHeader>
+          <CardTitle className="text-sm">🔍 Filtros de Produtos</CardTitle>
+          <CardDescription className="text-xs">
+            Use os filtros abaixo para encontrar produtos específicos de forma rápida e precisa
+          </CardDescription>
+        </CardHeader>
         <CardContent className="pt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Buscar por nome</Label>
-                          <Input
-                placeholder="Nome do produto..." 
+              <Label className="text-xs font-medium text-gray-700">📝 Nome do produto</Label>
+              <Input
+                placeholder="Digite o nome do produto..." 
                 value={searchName} 
                 onChange={e => setSearchName(e.target.value)} 
                 className="text-sm"
-                          />
-                        </div>
+              />
+            </div>
             
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Buscar por SKU</Label>
-                          <Input
-                placeholder="Código SKU..." 
+              <Label className="text-xs font-medium text-gray-700">🏷️ Código SKU</Label>
+              <Input
+                placeholder="Digite o código SKU..." 
                 value={searchSku} 
                 onChange={e => setSearchSku(e.target.value)} 
                 className="text-sm"
-                          />
-                        </div>
+              />
+            </div>
             
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Buscar por marca</Label>
-                          <Input
-                placeholder="Nome da marca..." 
-                            value={searchBrand}
-                            onChange={e => setSearchBrand(e.target.value)}
+              <Label className="text-xs font-medium text-gray-700">🏢 Marca do produto</Label>
+              <Input
+                placeholder="Digite o nome da marca..." 
+                value={searchBrand}
+                onChange={e => setSearchBrand(e.target.value)}
                 className="text-sm"
-                          />
-                        </div>
+              />
+            </div>
             
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Status do produto</Label>
+              <Label className="text-xs font-medium text-gray-700">✅ Status do produto</Label>
               <Select value={filter} onValueChange={setFilter}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos os produtos</SelectItem>
-                  <SelectItem value="ativos">Apenas ativos</SelectItem>
-                  <SelectItem value="inativos">Apenas inativos</SelectItem>
+                  <SelectItem value="todos">📦 Todos os produtos</SelectItem>
+                  <SelectItem value="ativos">✅ Apenas ativos</SelectItem>
+                  <SelectItem value="inativos">❌ Apenas inativos</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Categoria</Label>
-                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <Label className="text-xs font-medium text-gray-700">📁 Categoria</Label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Selecione a categoria" />
-                          </SelectTrigger>
-                          <SelectContent>
-                  <SelectItem value="todas">Todas as categorias</SelectItem>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">📁 Todas as categorias</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category.id} value={category.slug}>
                       {category.name}
                     </SelectItem>
                   ))}
-                          </SelectContent>
-                        </Select>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Marca</Label>
+              <Label className="text-xs font-medium text-gray-700">🏷️ Filtrar por marca</Label>
               <Select value={brandFilter} onValueChange={setBrandFilter}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Selecione a marca" />
-                          </SelectTrigger>
-                          <SelectContent>
-                  <SelectItem value="todas">Todas as marcas</SelectItem>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">🏷️ Todas as marcas</SelectItem>
                   {brands.map((brand) => (
                     <SelectItem key={brand} value={brand}>
                       {brand}
                     </SelectItem>
                   ))}
-                          </SelectContent>
-                        </Select>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Preço mínimo</Label>
-                          <Input
+              <Label className="text-xs font-medium text-gray-700">💰 Preço mínimo</Label>
+              <Input
                 placeholder="R$ 0,00" 
-                            type="number"
-                            value={searchPriceMin}
-                            onChange={e => setSearchPriceMin(e.target.value)}
+                type="number"
+                step="0.01"
+                value={searchPriceMin}
+                onChange={e => setSearchPriceMin(e.target.value)}
                 className="text-sm"
-                          />
+              />
             </div>
             
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Preço máximo</Label>
-                          <Input
+              <Label className="text-xs font-medium text-gray-700">💰 Preço máximo</Label>
+              <Input
                 placeholder="R$ 999,99" 
-                            type="number"
-                            value={searchPriceMax}
-                            onChange={e => setSearchPriceMax(e.target.value)}
+                type="number"
+                step="0.01"
+                value={searchPriceMax}
+                onChange={e => setSearchPriceMax(e.target.value)}
                 className="text-sm"
-                          />
-                        </div>
+              />
+            </div>
             
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Situação do estoque</Label>
-                        <Select value={searchStock || "todos"} onValueChange={v => setSearchStock(v === "todos" ? "" : v)}>
+              <Label className="text-xs font-medium text-gray-700">📦 Situação do estoque</Label>
+              <Select value={searchStock || "todos"} onValueChange={v => setSearchStock(v === "todos" ? "" : v)}>
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Selecione a situação" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos">Todos</SelectItem>
-                            <SelectItem value="com">Com estoque</SelectItem>
-                            <SelectItem value="sem">Sem estoque</SelectItem>
-                  <SelectItem value="baixo">Baixo estoque (≤ 10)</SelectItem>
-                  <SelectItem value="critico">Estoque crítico (≤ 5)</SelectItem>
-                          </SelectContent>
-                        </Select>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">📦 Todas as situações</SelectItem>
+                  <SelectItem value="com">✅ Com estoque</SelectItem>
+                  <SelectItem value="sem">❌ Sem estoque</SelectItem>
+                  <SelectItem value="baixo">⚠️ Baixo estoque (≤ 10)</SelectItem>
+                  <SelectItem value="critico">🚨 Estoque crítico (≤ 5)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
           {/* Ordenação e botão para limpar filtros */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
-            <div className="flex items-center gap-2">
-              <Label className="text-xs font-medium">Ordenar por:</Label>
-              <Select value={sortBy} onValueChange={(value: 'name' | 'price' | 'stock' | 'createdAt') => setSortBy(value)}>
-                <SelectTrigger className="text-sm w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Nome</SelectItem>
-                  <SelectItem value="price">Preço</SelectItem>
-                  <SelectItem value="stock">Estoque</SelectItem>
-                  <SelectItem value="createdAt">Data</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-6 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+              <Label className="text-xs font-medium text-gray-700">📊 Ordenar por:</Label>
+              <div className="flex items-center gap-2">
+                <Select value={sortBy} onValueChange={(value: 'name' | 'price' | 'stock' | 'createdAt') => setSortBy(value)}>
+                  <SelectTrigger className="text-sm w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">📝 Nome</SelectItem>
+                    <SelectItem value="price">💰 Preço</SelectItem>
+                    <SelectItem value="stock">📦 Estoque</SelectItem>
+                    <SelectItem value="createdAt">📅 Data</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="px-3"
+                  title={sortOrder === 'asc' ? 'Ordenar decrescente' : 'Ordenar crescente'}
+                >
+                  {sortOrder === 'asc' ? '⬆️ A-Z' : '⬇️ Z-A'}
+                </Button>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-xs text-gray-500 self-center">
+                {filteredProducts.length} de {products.length} produtos
+              </span>
               <Button 
                 variant="outline" 
-                size="sm"
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="px-2"
+                size="sm" 
+                onClick={() => {
+                  setSearchName("")
+                  setSearchSku("")
+                  setSearchBrand("")
+                  setSearchPriceMin("")
+                  setSearchPriceMax("")
+                  setSearchStock("")
+                  setFilter("todos")
+                  setCategoryFilter("todas")
+                  setBrandFilter("todas")
+                  setSortBy("name")
+                  setSortOrder("asc")
+                  setCurrentPage(1)
+                }}
+                className="whitespace-nowrap"
               >
-                {sortOrder === 'asc' ? '↑' : '↓'}
+                🔄 Limpar Filtros
               </Button>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                setSearchName("")
-                setSearchSku("")
-                setSearchBrand("")
-                setSearchPriceMin("")
-                setSearchPriceMax("")
-                setSearchStock("")
-                setFilter("todos")
-                setCategoryFilter("todas")
-                setBrandFilter("todas")
-                setSortBy("name")
-                setSortOrder("asc")
-                setCurrentPage(1)
-              }}
-            >
-              Limpar Filtros
-            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Renderização condicional: cards no mobile, tabela no desktop */}
       {isMobile ? (
-        <div className="flex flex-col gap-3 mt-4">
+        <div className="space-y-3">
           {paginatedProducts.map(product => (
-            <div key={product.id} className="flex items-start gap-3 p-4 rounded-xl border bg-white shadow-sm">
-              <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                <img src={product.images?.[0] || '/placeholder.svg'} alt={product.name} className="object-cover w-full h-full" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${product.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{product.isActive ? 'ativo' : 'inativo'}</span>
-                  <span className="text-xs text-muted-foreground">{product.sku || product.id}</span>
+            <Card key={product.id} className="overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                    <img src={product.images?.[0] || '/placeholder.svg'} alt={product.name} className="object-cover w-full h-full" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${product.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {product.isActive ? '✅ ativo' : '❌ inativo'}
+                      </span>
+                      <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">#{product.sku || product.id}</span>
+                    </div>
+                    <h3 className="font-semibold text-base mb-2 leading-tight">{product.name}</h3>
+                    
+                    {product.brand && (
+                      <div className="text-sm text-blue-600 mb-2 font-medium">🏢 {product.brand}</div>
+                    )}
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-600">💰 Preço:</span>
+                        <div className="font-bold text-lg text-green-600">{product.price}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">📦 Estoque:</span>
+                        <div className={`font-semibold ${
+                          product.stock <= 0 ? 'text-red-600' :
+                          product.stock <= 5 ? 'text-red-500' :
+                          product.stock <= 10 ? 'text-yellow-600' :
+                          'text-green-600'
+                        }`}>
+                          {product.stock} un.
+                          {product.stock <= 5 && product.stock > 0 && ' ⚠️'}
+                          {product.stock <= 0 && ' 🚫'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {product.category && (
+                      <div className="text-xs text-gray-500 mt-2">
+                        📁 {product.category}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="font-semibold text-base mb-1 line-clamp-2">{product.name}</div>
-                {product.brand && (
-                  <div className="text-xs text-blue-600 mb-1">{product.brand}</div>
-                )}
-                <div className="flex items-center justify-between">
+                
+                {/* Ações mobile organizadas */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-gray-800">{product.price}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      product.stock <= 0 ? 'bg-red-50 text-red-700' :
-                      product.stock <= 5 ? 'bg-red-100 text-red-800' :
-                      product.stock <= 10 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-50 text-green-700'
-                    }`}>
-                      {product.stock} un.
-                      {product.stock <= 5 && product.stock > 0 && (
-                        <span className="ml-1 text-xs">⚠️</span>
-                      )}
-                    </span>
+                    <Switch 
+                      checked={product.isActive} 
+                      onCheckedChange={checked => toggleProductStatus(product.id, product.isActive ? 'inactive' : 'active')}
+                      className="scale-90"
+                    />
+                    <span className="text-xs text-gray-600">Ativo</span>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {product.category || 'Sem categoria'}
+                  
+                  <div className="flex gap-1">
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      className="w-8 h-8" 
+                      asChild
+                      title="Ver na loja"
+                    >
+                      <Link href={`/produto/${product.slug || product.id}`} target="_blank">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      className="w-8 h-8" 
+                      onClick={() => openEditModal(product)} 
+                      title="Editar"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="ghost" 
+                      className="w-8 h-8 text-red-600 hover:text-red-700 hover:bg-red-50" 
+                      onClick={() => { setProductToDelete(product); setDeleteModalOpen(true); }} 
+                      title="Excluir"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
-              </div>
-              <div className="flex flex-col gap-1 ml-2 items-end">
-                <div className="flex gap-1">
-                  <Button 
-                    size="icon" 
-                    variant="outline" 
-                    className="w-7 h-7" 
-                    asChild
-                    title="Ver na loja"
-                  >
-                    <Link href={`/produto/${product.slug || product.id}`} target="_blank">
-                      <ExternalLink className="h-3 w-3" />
-                    </Link>
-                  </Button>
-                  <Button size="icon" variant="outline" className="w-7 h-7" onClick={() => openEditModal(product)} title="Editar">
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="w-7 h-7" onClick={() => { setProductToDelete(product); setDeleteModalOpen(true); }} title="Excluir">
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-                <Switch 
-                  checked={product.isActive} 
-                  onCheckedChange={checked => toggleProductStatus(product.id, product.isActive ? 'inactive' : 'active')}
-                  className="scale-75 mt-1"
-                />
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
-          {/* Controles de paginação mobile */}
-          <div className="flex justify-center gap-2 mt-4">
-            <Button size="sm" variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>Anterior</Button>
-            <span className="text-sm font-medium">Página {currentPage} de {totalPages}</span>
-            <Button size="sm" variant="outline" disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)}>Próxima</Button>
-          </div>
+          
+          {/* Controles de paginação mobile melhorados */}
+          <Card className="mt-4">
+            <CardContent className="p-4">
+              <div className="flex flex-col items-center gap-3">
+                <div className="text-sm text-gray-600">
+                  Página {currentPage} de {totalPages} • {filteredProducts.length} produtos
+                </div>
+                <div className="flex gap-2 w-full">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    disabled={currentPage === 1} 
+                    onClick={() => setCurrentPage(currentPage - 1)}
+                    className="flex-1"
+                  >
+                    ← Anterior
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    disabled={currentPage === totalPages} 
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    className="flex-1"
+                  >
+                    Próxima →
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       ) : (
         <>
@@ -843,18 +1013,19 @@ export default function ProdutosPage() {
             </CardHeader>
             <CardContent>
               <div className="w-full overflow-x-auto">
-                <Table className="min-w-full">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[60px]">Imagem</TableHead>
-                      <TableHead className="min-w-[120px]">Produto</TableHead>
-                      <TableHead className="hidden md:table-cell min-w-[100px]">Categoria</TableHead>
-                      <TableHead className="w-[80px]">Status</TableHead>
-                      <TableHead className="hidden sm:table-cell min-w-[80px]">Preço</TableHead>
-                      <TableHead className="hidden lg:table-cell min-w-[80px]">Estoque</TableHead>
-                      <TableHead className="w-[120px]">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[800px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[60px]">📷</TableHead>
+                        <TableHead className="min-w-[180px]">📝 Produto</TableHead>
+                        <TableHead className="hidden md:table-cell min-w-[120px]">📁 Categoria</TableHead>
+                        <TableHead className="w-[90px]">✅ Status</TableHead>
+                        <TableHead className="hidden sm:table-cell min-w-[100px]">💰 Preço</TableHead>
+                        <TableHead className="hidden lg:table-cell min-w-[100px]">📦 Estoque</TableHead>
+                        <TableHead className="w-[140px]">⚙️ Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
                   <TableBody>
                     {paginatedProducts.map((product) => (
                       <TableRow key={product.id}>
@@ -919,7 +1090,8 @@ export default function ProdutosPage() {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                  </Table>
+                </div>
               </div>
             </CardContent>
             <CardFooter>
