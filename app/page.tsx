@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -82,6 +84,19 @@ const plans = [
 ]
 
 export default function Home() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Verificar se há parâmetro store na URL
+  useEffect(() => {
+    const storeParam = searchParams.get('store')
+    if (storeParam) {
+      // Se há parâmetro store, redirecionar para a página de catálogo
+      router.push(`/catalogo?store=${storeParam}`)
+      return
+    }
+  }, [searchParams, router])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header */}

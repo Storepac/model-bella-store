@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -610,6 +611,26 @@ export default function CadastroWizard() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
+        {/* Header com botões de navegação */}
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" asChild>
+              <Link href="/">
+                ← Voltar para Home
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/acesso">
+                Fazer Login
+              </Link>
+            </Button>
+          </div>
+          <div className="flex items-center gap-2">
+            <Store className="h-6 w-6 text-primary" />
+            <span className="text-lg font-bold">Bella Store</span>
+          </div>
+        </div>
+
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Criar Nova Loja

@@ -83,13 +83,27 @@ export default function CatalogoPage() {
   const [storeId, setStoreId] = useState<number | null>(null)
 
   useEffect(() => {
-    let _storeId = null
-    if (typeof window !== 'undefined') {
-      const user = JSON.parse(localStorage.getItem('user') || '{}')
-      _storeId = user?.storeId
+    const getStoreId = () => {
+      // Primeiro, tentar pegar da URL
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search)
+        const storeFromUrl = urlParams.get('store')
+        if (storeFromUrl) {
+          return parseInt(storeFromUrl)
+        }
+        
+        // Fallback: usuário logado
+        const user = JSON.parse(localStorage.getItem('user') || '{}')
+        if (user?.storeId) {
+          return user.storeId
+        }
+      }
+      return 1 // loja padrão
     }
-    if (!_storeId) _storeId = 1 // loja padrão
+
+    const _storeId = getStoreId()
     setStoreId(_storeId)
+    
     apiFetch(`/stores/${_storeId}`)
       .then(res => {
         if (res.success) setStoreData(res.data)

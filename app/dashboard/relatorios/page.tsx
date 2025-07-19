@@ -21,71 +21,112 @@ import {
 } from "recharts"
 import { TrendingUp, TrendingDown, DollarSign, ShoppingBag, Users, Eye, Download } from "lucide-react"
 
-// Mock data para relatórios
-const salesData = [
-  { month: "Jan", vendas: 12500, pedidos: 45, clientes: 38 },
-  { month: "Fev", vendas: 15800, pedidos: 52, clientes: 44 },
-  { month: "Mar", vendas: 18200, pedidos: 61, clientes: 51 },
-  { month: "Abr", vendas: 16900, pedidos: 58, clientes: 49 },
-  { month: "Mai", vendas: 21300, pedidos: 72, clientes: 63 },
-  { month: "Jun", vendas: 19800, pedidos: 68, clientes: 58 },
-]
-
-const productData = [
-  { name: "Vestidos", vendas: 45, valor: 7200, views: 1250 },
-  { name: "Blusas", vendas: 38, valor: 3420, views: 980 },
-  { name: "Calças", vendas: 32, valor: 4160, views: 850 },
-  { name: "Sapatos", vendas: 28, valor: 5600, views: 720 },
-  { name: "Acessórios", vendas: 22, valor: 2860, views: 650 },
-]
-
-const categoryData = [
-  { name: "Vestidos", value: 35, color: "#8884d8" },
-  { name: "Blusas", value: 25, color: "#82ca9d" },
-  { name: "Calças", value: 20, color: "#ffc658" },
-  { name: "Sapatos", value: 15, color: "#ff7300" },
-  { name: "Acessórios", value: 5, color: "#00ff00" },
-]
-
-const topProducts = [
-  { name: "Vestido Midi Floral", vendas: 15, valor: 2385, views: 320 },
-  { name: "Blusa Cropped Básica", vendas: 12, valor: 1078, views: 280 },
-  { name: "Calça Jeans Skinny", vendas: 10, valor: 1299, views: 250 },
-  { name: "Tênis Chunky Branco", vendas: 8, valor: 1599, views: 200 },
-  { name: "Bolsa Transversal", vendas: 7, valor: 909, views: 180 },
-]
-
 export default function RelatoriosPage() {
-  const [relatorios, setRelatorios] = useState<any[]>([])
+  const [relatorios, setRelatorios] = useState<any>({
+    salesData: [],
+    productData: [],
+    categoryData: [],
+    topProducts: [],
+    metrics: {}
+  })
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState("30d")
-
-  const currentMonth = salesData[salesData.length - 1]
-  const previousMonth = salesData[salesData.length - 2]
-
-  const salesGrowth = ((currentMonth.vendas - previousMonth.vendas) / previousMonth.vendas) * 100
-  const ordersGrowth = ((currentMonth.pedidos - previousMonth.pedidos) / previousMonth.pedidos) * 100
-  const customersGrowth = ((currentMonth.clientes - previousMonth.clientes) / previousMonth.clientes) * 100
-
-  const totalViews = productData.reduce((sum, product) => sum + product.views, 0)
-  const totalSales = productData.reduce((sum, product) => sum + product.vendas, 0)
-  const conversionRate = (totalSales / totalViews) * 100
 
   useEffect(() => {
     const fetchRelatorios = async () => {
       setLoading(true)
       try {
-        const res = await fetch('/api/reports')
+        const res = await fetch(`/api/reports?dateRange=${dateRange}`)
         const data = await res.json()
-        setRelatorios(data.reports || [])
+        
+        if (data.success) {
+          setRelatorios(data)
+        } else {
+          // Fallback para dados mock se não houver dados reais
+          setRelatorios({
+            salesData: [
+              { month: "Jan", vendas: 12500, pedidos: 45, clientes: 38 },
+              { month: "Fev", vendas: 15800, pedidos: 52, clientes: 44 },
+              { month: "Mar", vendas: 18200, pedidos: 61, clientes: 51 },
+              { month: "Abr", vendas: 16900, pedidos: 58, clientes: 49 },
+              { month: "Mai", vendas: 21300, pedidos: 72, clientes: 63 },
+              { month: "Jun", vendas: 19800, pedidos: 68, clientes: 58 },
+            ],
+            productData: [
+              { name: "Vestidos", vendas: 45, valor: 7200, views: 1250 },
+              { name: "Blusas", vendas: 38, valor: 3420, views: 980 },
+              { name: "Calças", vendas: 32, valor: 4160, views: 850 },
+              { name: "Sapatos", vendas: 28, valor: 5600, views: 720 },
+              { name: "Acessórios", vendas: 22, valor: 2860, views: 650 },
+            ],
+            categoryData: [
+              { name: "Vestidos", value: 35, color: "#8884d8" },
+              { name: "Blusas", value: 25, color: "#82ca9d" },
+              { name: "Calças", value: 20, color: "#ffc658" },
+              { name: "Sapatos", value: 15, color: "#ff7300" },
+              { name: "Acessórios", value: 5, color: "#00ff00" },
+            ],
+            topProducts: [
+              { name: "Vestido Midi Floral", vendas: 15, valor: 2385, views: 320 },
+              { name: "Blusa Cropped Básica", vendas: 12, valor: 1078, views: 280 },
+              { name: "Calça Jeans Skinny", vendas: 10, valor: 1299, views: 250 },
+              { name: "Tênis Chunky Branco", vendas: 8, valor: 1599, views: 200 },
+              { name: "Bolsa Transversal", vendas: 7, valor: 909, views: 180 },
+            ],
+            metrics: {
+              totalSales: 21300,
+              totalOrders: 72,
+              totalClients: 63,
+              conversionRate: 5.8
+            }
+          })
+        }
       } catch (err) {
-        setRelatorios([])
+        console.error('Erro ao buscar relatórios:', err)
+        // Usar dados mock em caso de erro
+        setRelatorios({
+          salesData: [],
+          productData: [],
+          categoryData: [],
+          topProducts: [],
+          metrics: { totalSales: 0, totalOrders: 0, totalClients: 0, conversionRate: 0 }
+        })
       } finally {
         setLoading(false)
       }
     }
     fetchRelatorios()
-  }, [])
+  }, [dateRange])
+
+  const { salesData, productData, categoryData, topProducts, metrics } = relatorios
+  
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-48 mb-4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+          <div className="h-64 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    )
+  }
+
+  // Calcular métricas
+  const currentMonth = salesData[salesData.length - 1] || { vendas: 0, pedidos: 0, clientes: 0 }
+  const previousMonth = salesData[salesData.length - 2] || { vendas: 0, pedidos: 0, clientes: 0 }
+
+  const salesGrowth = previousMonth.vendas ? ((currentMonth.vendas - previousMonth.vendas) / previousMonth.vendas) * 100 : 0
+  const ordersGrowth = previousMonth.pedidos ? ((currentMonth.pedidos - previousMonth.pedidos) / previousMonth.pedidos) * 100 : 0
+  const customersGrowth = previousMonth.clientes ? ((currentMonth.clientes - previousMonth.clientes) / previousMonth.clientes) * 100 : 0
+
+  const totalViews = productData.reduce((sum: number, product: any) => sum + (product.views || 0), 0)
+  const totalSales = productData.reduce((sum: number, product: any) => sum + (product.vendas || 0), 0)
+  const conversionRate = totalViews ? (totalSales / totalViews) * 100 : 0
 
   return (
     <div className="p-4 md:p-6 space-y-6">

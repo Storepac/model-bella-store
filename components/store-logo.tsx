@@ -37,11 +37,11 @@ export function StoreLogo({ className = "", showName = true, size = "md" }: Stor
   const getStoreInfo = () => {
     if (isDemo2) return demo2Data
     if (isDemo) return demoData
-    if (storeData) {
+    if (storeData && storeData.name) {
       return {
         name: storeData.name,
-        logo: storeData.logo || storeData.name.charAt(0).toUpperCase(),
-        logoUrl: storeData.logo_url || null,
+        logo: storeData.name.charAt(0).toUpperCase(),
+        logoUrl: null,
         theme: "default"
       }
     }
