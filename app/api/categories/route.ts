@@ -470,9 +470,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
+    // Obter token de autorização
+    const authHeader = request.headers.get('authorization')
+    
     // Fazer requisição para o backend
     const result = await apiRequest('/categories', {
       method: 'POST',
+      headers: {
+        'Authorization': authHeader || '',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(body)
     });
     
@@ -486,9 +493,16 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
     
+    // Obter token de autorização
+    const authHeader = request.headers.get('authorization')
+    
     // Fazer requisição para o backend
     const result = await apiRequest(`/categories/${body.id}`, {
       method: 'PUT',
+      headers: {
+        'Authorization': authHeader || '',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(body)
     });
     
@@ -500,16 +514,23 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
+    const body = await request.json()
+    const { id, storeId } = body
     
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
     }
     
+    // Obter token de autorização
+    const authHeader = request.headers.get('authorization')
+    
     // Fazer requisição para o backend
     const result = await apiRequest(`/categories/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        'Authorization': authHeader || '',
+        'Content-Type': 'application/json'
+      }
     });
     
     return NextResponse.json(result)

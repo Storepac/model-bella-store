@@ -4,7 +4,7 @@ import { apiRequest, testBackendConnection } from '@/lib/database'
 // Dados mock para quando o backend não estiver disponível
 const mockData = {
   success: true,
-  data: []
+  banners: []
 };
 
 export async function GET(request: NextRequest) {
@@ -38,6 +38,93 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(mockData);
     }
     
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    
+    // Obter token de autorização
+    const authHeader = request.headers.get('authorization')
+    
+    // Fazer requisição para o backend
+    const result = await apiRequest('/banners', {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader || '',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    
+    return NextResponse.json(result, { status: 201 })
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 })
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    
+    // Obter token de autorização
+    const authHeader = request.headers.get('authorization')
+    
+    // Fazer requisição para o backend
+    let result;
+    if (body.id) {
+      // Se há ID no body, usar rota com ID
+      result = await apiRequest(`/banners/${body.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': authHeader || '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+    } else {
+      // Senão, usar rota sem ID (compatibilidade)
+      result = await apiRequest('/banners', {
+        method: 'PUT',
+        headers: {
+          'Authorization': authHeader || '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+    }
+    
+    return NextResponse.json(result)
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { id, storeId } = body
+    
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    }
+    
+    // Obter token de autorização
+    const authHeader = request.headers.get('authorization')
+    
+    // Fazer requisição para o backend
+    const result = await apiRequest(`/banners/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': authHeader || '',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    return NextResponse.json(result)
+  } catch (error: any) {
     return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 })
   }
 } 

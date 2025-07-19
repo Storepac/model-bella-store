@@ -49,7 +49,7 @@ export function Header() {
     if (!announcementText || announcementText === " •  • ") return null;
 
     return (
-      <div className="bg-gray-900 text-white text-sm py-2 overflow-x-hidden">
+      <div className="text-white text-sm py-2 overflow-x-hidden" style={{ backgroundColor: 'var(--footer-color)', color: 'var(--background-color)' }}>
         <div className="flex whitespace-nowrap">
           <div className="marquee flex-shrink-0">
             {[...Array(4)].map((_, i) => (
@@ -62,9 +62,9 @@ export function Header() {
   };
   
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
+    <header className="sticky top-0 z-50 w-full header-custom backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
       {renderTopBar()}
-      <div className="container mx-auto px-4">
+      <div className="container-custom">
         <div className="flex items-center justify-between py-4">
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -77,7 +77,7 @@ export function Header() {
           </div>
 
           <nav className="hidden md:flex items-center space-x-8 flex-1 justify-center">
-            <Link href={isDemo ? "/demo" : "/"} className="text-sm font-medium hover:text-pink-500 transition-colors">
+            <Link href={isDemo ? "/demo" : "/"} className="text-sm font-medium link-custom transition-colors">
               Home
             </Link>
             {isDemo && !pathname?.startsWith('/demo2') ? (

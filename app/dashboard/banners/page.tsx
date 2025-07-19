@@ -76,24 +76,31 @@ export default function BannersPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
+      const token = localStorage.getItem('token')
       const payload = {
         ...formData,
         storeId,
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
       }
 
       if (editingBanner) {
         // Atualizar banner existente
         const res = await fetch('/api/banners', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             id: editingBanner.id,
             ...payload,
           }),
         })
 
-        if (!res.ok) {
-          throw new Error('Erro ao atualizar banner')
+        const data = await res.json()
+        if (!data.success) {
+          throw new Error(data.message || 'Erro ao atualizar banner')
         }
 
         toast({
@@ -104,12 +111,13 @@ export default function BannersPage() {
         // Criar novo banner
         const res = await fetch('/api/banners', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(payload),
         })
 
-        if (!res.ok) {
-          throw new Error('Erro ao criar banner')
+        const data = await res.json()
+        if (!data.success) {
+          throw new Error(data.message || 'Erro ao criar banner')
         }
 
         toast({
@@ -132,11 +140,11 @@ export default function BannersPage() {
       })
       setEditingBanner(null)
       setIsDialogOpen(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar banner:', error)
       toast({
         title: "Erro!",
-        description: "Não foi possível salvar o banner. Tente novamente.",
+        description: error.message || "Não foi possível salvar o banner. Tente novamente.",
         variant: "destructive",
       })
     } finally {
@@ -161,17 +169,23 @@ export default function BannersPage() {
     if (!deleteId) return
     
     try {
+      const token = localStorage.getItem('token')
+      
       const res = await fetch('/api/banners', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
         body: JSON.stringify({
           id: deleteId,
           storeId,
         }),
       })
 
-      if (!res.ok) {
-        throw new Error('Erro ao deletar banner')
+      const data = await res.json()
+      if (!data.success) {
+        throw new Error(data.message || 'Erro ao deletar banner')
       }
 
       toast({
@@ -181,11 +195,11 @@ export default function BannersPage() {
 
       // Recarregar banners
       await fetchBanners()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao deletar banner:', error)
       toast({
         title: "Erro!",
-        description: "Não foi possível excluir o banner. Tente novamente.",
+        description: error.message || "Não foi possível excluir o banner. Tente novamente.",
         variant: "destructive",
       })
     } finally {
@@ -198,9 +212,14 @@ export default function BannersPage() {
     if (!banner) return
 
     try {
+      const token = localStorage.getItem('token')
+      
       const res = await fetch('/api/banners', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
         body: JSON.stringify({
           id: id,
           isActive: !banner.isActive,
@@ -208,8 +227,9 @@ export default function BannersPage() {
         }),
       })
 
-      if (!res.ok) {
-        throw new Error('Erro ao atualizar status do banner')
+      const data = await res.json()
+      if (!data.success) {
+        throw new Error(data.message || 'Erro ao atualizar status do banner')
       }
 
       // Recarregar banners
@@ -219,11 +239,11 @@ export default function BannersPage() {
         title: banner.isActive ? "Banner desativado!" : "Banner ativado!",
         description: `O banner foi ${banner.isActive ? 'desativado' : 'ativado'} com sucesso.`,
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao alterar status do banner:', error)
       toast({
         title: "Erro!",
-        description: "Não foi possível alterar o status do banner.",
+        description: error.message || "Não foi possível alterar o status do banner.",
         variant: "destructive",
       })
     }

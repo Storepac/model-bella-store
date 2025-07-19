@@ -93,6 +93,8 @@ export default function CategoriasPage() {
     setSaving(true)
     try {
       const storeId = getUserStoreId()
+      const token = localStorage.getItem('token')
+      
       const newCategory = {
         id: editingCategory ? editingCategory.id : undefined,
         ...formData,
@@ -105,19 +107,33 @@ export default function CategoriasPage() {
         subcategories: editingCategory ? editingCategory.subcategories : []
       }
       
-      if (editingCategory) {
-        await fetch('/api/categories', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newCategory)
-        })
-      } else {
-        await fetch('/api/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newCategory)
-        })
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
       }
+      
+      if (editingCategory) {
+        const response = await fetch('/api/categories', {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(newCategory)
+        })
+        const data = await response.json()
+        if (!data.success && data.error) {
+          throw new Error(data.error)
+        }
+      } else {
+        const response = await fetch('/api/categories', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(newCategory)
+        })
+        const data = await response.json()
+        if (!data.success && data.error) {
+          throw new Error(data.error)
+        }
+      }
+      
       await reloadCategorias() // Garante atualização imediata
       setFormData((prev: any) => ({
         name: "",
@@ -141,6 +157,18 @@ export default function CategoriasPage() {
       }))
       setEditingCategory(null)
       setIsDialogOpen(false)
+      
+      toast({
+        title: "Sucesso!",
+        description: editingCategory ? "Categoria atualizada com sucesso" : "Categoria criada com sucesso"
+      })
+      
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar categoria",
+        variant: "destructive"
+      })
     } finally {
       setSaving(false)
     }
@@ -173,27 +201,69 @@ export default function CategoriasPage() {
 
   const handleDelete = async (id: string) => {
     if (confirm("Tem certeza que deseja excluir esta categoria e todas as suas subcategorias?")) {
-      const storeId = getUserStoreId()
-      await fetch('/api/categories', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, storeId })
-      })
-      reloadCategorias()
+      try {
+        const storeId = getUserStoreId()
+        const token = localStorage.getItem('token')
+        
+        const response = await fetch('/api/categories', {
+          method: 'DELETE',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          },
+          body: JSON.stringify({ id, storeId })
+        })
+        
+        const data = await response.json()
+        if (!data.success && data.error) {
+          throw new Error(data.error)
+        }
+        
+        reloadCategorias()
+        
+        toast({
+          title: "Sucesso!",
+          description: "Categoria excluída com sucesso"
+        })
+        
+      } catch (error: any) {
+        toast({
+          title: "Erro",
+          description: error.message || "Erro ao excluir categoria",
+          variant: "destructive"
+        })
+      }
     }
   }
 
   const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
       const storeId = getUserStoreId()
-      await fetch('/api/categories', {
+      const token = localStorage.getItem('token')
+      
+      const response = await fetch('/api/categories', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
         body: JSON.stringify({ id, storeId, isActive: !currentStatus })
       })
+      
+      const data = await response.json()
+      if (!data.success && data.error) {
+        throw new Error(data.error)
+      }
+      
       reloadCategorias()
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error('Erro ao atualizar status da categoria:', error)
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar status da categoria",
+        variant: "destructive"
+      })
     }
   }
 

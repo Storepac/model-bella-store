@@ -34,8 +34,8 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-gray-900 text-white">
-      <div className="container mx-auto px-4 py-12">
+    <footer className="footer-custom">
+      <div className="container-custom py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           
           <div className="md:col-span-2">
@@ -49,20 +49,20 @@ export function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-4">Institucional</h4>
             <ul className="space-y-2">
-              <li><Link href="/sobre" className="text-gray-400 hover:text-pink-400">Sobre Nós</Link></li>
-              <li><Link href="/politica-privacidade" className="text-gray-400 hover:text-pink-400">Política de Privacidade</Link></li>
-              <li><Link href="/termos-uso" className="text-gray-400 hover:text-pink-400">Termos de Uso</Link></li>
-              <li><Link href="/politica-troca" className="text-gray-400 hover:text-pink-400">Política de Troca</Link></li>
+              <li><Link href="/sobre" className="text-gray-400 hover:opacity-80">Sobre Nós</Link></li>
+              <li><Link href="/politica-privacidade" className="text-gray-400 hover:opacity-80">Política de Privacidade</Link></li>
+              <li><Link href="/termos-uso" className="text-gray-400 hover:opacity-80">Termos de Uso</Link></li>
+              <li><Link href="/politica-troca" className="text-gray-400 hover:opacity-80">Política de Troca</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-lg font-semibold mb-4">Redes Sociais</h4>
             <div className="flex space-x-4">
-              {storeData.instagram && <a href={storeData.instagram.startsWith('http') ? storeData.instagram : `https://instagram.com/${storeData.instagram}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-400"><Instagram className="h-6 w-6" /></a>}
-              {storeData.facebook && <a href={storeData.facebook.startsWith('http') ? storeData.facebook : `https://facebook.com/${storeData.facebook}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400"><Facebook className="h-6 w-6" /></a>}
-              {storeData.tiktok && <a href={storeData.tiktok.startsWith('http') ? storeData.tiktok : `https://tiktok.com/@${storeData.tiktok}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-pink-400"><TikTokIcon className="h-6 w-6" /></a>}
-              {storeData.youtube && <a href={storeData.youtube.startsWith('http') ? storeData.youtube : `https://youtube.com/@${storeData.youtube}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-red-400"><Youtube className="h-6 w-6" /></a>}
+              {storeData.instagram && <a href={storeData.instagram.startsWith('http') ? storeData.instagram : `https://instagram.com/${storeData.instagram}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:opacity-80"><Instagram className="h-6 w-6" /></a>}
+              {storeData.facebook && <a href={storeData.facebook.startsWith('http') ? storeData.facebook : `https://facebook.com/${storeData.facebook}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:opacity-80"><Facebook className="h-6 w-6" /></a>}
+              {storeData.tiktok && <a href={storeData.tiktok.startsWith('http') ? storeData.tiktok : `https://tiktok.com/@${storeData.tiktok}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:opacity-80"><TikTokIcon className="h-6 w-6" /></a>}
+              {storeData.youtube && <a href={storeData.youtube.startsWith('http') ? storeData.youtube : `https://youtube.com/@${storeData.youtube}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:opacity-80"><Youtube className="h-6 w-6" /></a>}
             </div>
             
             {storeData.whatsapp && (

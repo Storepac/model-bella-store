@@ -944,8 +944,8 @@ export default function ProdutosPage() {
                       asChild
                       title="Ver na loja"
                     >
-                      <Link href={`/produto/${product.slug || product.id}`} target="_blank">
-                        <ExternalLink className="h-3.5 w-3.5" />
+                      <Link href={`/?store=${getUserStoreId()}#produto-${product.slug || product.id}`} target="_blank">
+                        <Eye className="h-3.5 w-3.5" />
                       </Link>
                     </Button>
                     <Button 
@@ -1063,17 +1063,23 @@ export default function ProdutosPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1 items-center">
-                            <Button 
-                              size="icon" 
-                              variant="outline" 
-                              className="w-7 h-7" 
-                              asChild
-                              title="Ver na loja"
-                            >
-                              <Link href={`/produto/${product.slug || product.id}`} target="_blank">
-                                <ExternalLink className="h-3 w-3" />
-                              </Link>
-                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    size="icon" 
+                                    variant="outline" 
+                                    className="w-7 h-7" 
+                                    asChild
+                                  >
+                                    <Link href={`/?store=${getUserStoreId()}#produto-${product.slug || product.id}`} target="_blank">
+                                      <Eye className="h-3 w-3" />
+                                    </Link>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Ver na loja</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                             <Switch 
                               checked={product.isActive} 
                               onCheckedChange={checked => toggleProductStatus(product.id, product.isActive ? 'inactive' : 'active')}

@@ -45,7 +45,7 @@ export default function ProductCard({ product, onAddToCart, isDemo = false }: Pr
   }
 
   return (
-    <div className="group relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100">
+    <div className="group relative card-custom overflow-hidden transition-all duration-300 border border-gray-100">
       {/* Image Container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
         <Link href={getProductLink()}>
@@ -112,7 +112,7 @@ export default function ProductCard({ product, onAddToCart, isDemo = false }: Pr
 
         {/* Quick Add Button */}
         <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 right-2 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <Button onClick={() => onAddToCart(product)} className="w-full bg-black hover:bg-gray-800 text-white h-8 sm:h-10 text-xs sm:text-sm">
+          <Button onClick={() => onAddToCart(product)} className="w-full btn-custom text-white h-8 sm:h-10 text-xs sm:text-sm">
             <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             Adicionar
           </Button>
@@ -123,7 +123,7 @@ export default function ProductCard({ product, onAddToCart, isDemo = false }: Pr
       <div className="p-3 sm:p-4">
         <div className="text-xs text-muted-foreground mb-1 uppercase tracking-wide">{product.category}</div>
         <Link href={getProductLink()}>
-          <h3 className="font-medium text-sm mb-2 line-clamp-2 leading-tight hover:text-blue-600 transition-colors cursor-pointer">{product.name}</h3>
+          <h3 className="font-medium text-sm mb-2 line-clamp-2 leading-tight link-custom transition-colors cursor-pointer">{product.name}</h3>
         </Link>
 
         <div className="flex items-center gap-2">
