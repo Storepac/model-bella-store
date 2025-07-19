@@ -125,9 +125,9 @@ export default function AdminPage() {
               <Store className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.totalStores}</div>
+              <div className="text-2xl font-bold">{data.totalStores || 0}</div>
               <p className="text-xs text-muted-foreground">
-                {data.activeStores} ativas
+                {data.activeStores || 0} ativas
               </p>
             </CardContent>
           </Card>
@@ -138,7 +138,7 @@ export default function AdminPage() {
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.totalProducts}</div>
+              <div className="text-2xl font-bold">{data.totalProducts || 0}</div>
               <p className="text-xs text-muted-foreground">
                 Em todas as lojas
               </p>
@@ -151,7 +151,7 @@ export default function AdminPage() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">R$ {data.totalRevenue.toLocaleString()}</div>
+              <div className="text-2xl font-bold">R$ {(data.totalRevenue || 0).toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
                 <TrendingUp className="inline h-3 w-3 text-green-500" /> +12% este mês
               </p>
@@ -164,7 +164,7 @@ export default function AdminPage() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{data.pendingStores}</div>
+              <div className="text-2xl font-bold">{data.pendingStores || 0}</div>
               <p className="text-xs text-muted-foreground">
                 Aguardando aprovação
               </p>
@@ -182,7 +182,7 @@ export default function AdminPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {data.recentStores.map((store) => (
+              {(data.recentStores || []).map((store) => (
                 <div key={store.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-4">
                     <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
